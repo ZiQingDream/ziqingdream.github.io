@@ -1,0 +1,892 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/avatar.jpg">
+  <link rel="icon" href="/img/avatar.jpg">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="ZiQingDream">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="通过代码分析Humble版本ROS2执行器细节，解释执行器背后的工作机理">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ROS2 Executor详解">
+<meta property="og:url" content="https://ziqingdream.github.io/2025/04/13/ROS2%20Executor%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="工程课代表 Blog">
+<meta property="og:description" content="通过代码分析Humble版本ROS2执行器细节，解释执行器背后的工作机理">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ziqingdream.github.io/img/bg/rem.jpg">
+<meta property="article:published_time" content="2025-04-12T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-05-28T06:43:55.570Z">
+<meta property="article:author" content="工程课代表">
+<meta property="article:tag" content="ROS2">
+<meta property="article:tag" content="Humble">
+<meta property="article:tag" content="Executor">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ziqingdream.github.io/img/bg/rem.jpg">
+  
+  
+  
+  <title>ROS2 Executor详解 - 工程课代表 Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"ziqingdream.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","app_key":"fUOlkXhD9wcmxOTed9NdlqPH","server_url":"https://lyt8mpsi.lc-cn-n1-shared.com","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>工程课代表 Blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('https://fluid.s3.bitiful.net/bg/dojm2h.png?w=1920&q=100&fmt=webp') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="ROS2 Executor详解"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-04-13 00:00" pubdate>
+          2025年4月13日 凌晨
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          7.1k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          60 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">ROS2 Executor详解</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <div class="note note-success">
+            <p>本文由 ZiQingDream 编写，未经允许禁止转载。</p><p>本文作者：工程课代表[bilibili] &#x2F; ZiQingDream[github]</p>
+          </div>
+
+
+<p>为什么有这篇文章：</p>
+<ol>
+<li>在使用ROS2编排话题、服务等，很少有人能够清楚、明确地说明ROS2调度逻辑；</li>
+<li>ROS2官网对于执行器和回调组的说明偏简单，可能产生理解偏差，本文尝试补充官网的细节；</li>
+<li>多线程执行器误用是造成ROS2死锁、崩溃、通信效率低下问题根源。<br>这篇文章从代码层面说明多种执行器差异，让阅读者对于执行器内部调度逻辑有比较清楚的认识，从而减少在机器人程序中出现的并发问题。</li>
+</ol>
+<blockquote>
+<p>[!note]<br>阅读本文需要你有一定ROS2基本理解，至少要有关于话题发布、订阅基础知识。</p>
+</blockquote>
+<hr>
+<h1 id="单线程执行器"><a href="#单线程执行器" class="headerlink" title="单线程执行器"></a>单线程执行器</h1><h2 id="实验——发布程序"><a href="#实验——发布程序" class="headerlink" title="实验——发布程序"></a>实验——发布程序</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">//src/ros2/examples/rclcpp/topics/minimal_publisher/member_function.cpp</span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;chrono&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;functional&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;memory&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;string&gt;</span></span><br><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&quot;rclcpp/rclcpp.hpp&quot;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&quot;std_msgs/msg/string.hpp&quot;</span></span><br><br><span class="hljs-keyword">using</span> <span class="hljs-keyword">namespace</span> std::chrono_literals;<br><br><span class="hljs-comment">// 从使用上来说，继承仅仅是为了简化代码操作，在ROS2整个设计体系下，</span><br><span class="hljs-comment">// 节点抽象更加独立和具体，作为类成员也很方便，不必非要写成继承</span><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">MinimalPublisher</span> : <span class="hljs-keyword">public</span> rclcpp::Node<br>&#123;<br><span class="hljs-keyword">public</span>:<br>  <span class="hljs-built_in">MinimalPublisher</span>()<br>  : <span class="hljs-built_in">Node</span>(<span class="hljs-string">&quot;minimal_publisher&quot;</span>), <span class="hljs-built_in">count_</span>(<span class="hljs-number">0</span>)<br>  &#123;<br>    <span class="hljs-comment">// 建立一个定时器，不断发送消息给订阅端</span><br>    publisher_ = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">create_publisher</span>&lt;std_msgs::msg::String&gt;(<span class="hljs-string">&quot;topic&quot;</span>, <span class="hljs-number">10</span>);<br>    timer_ = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">create_wall_timer</span>(<br>      <span class="hljs-number">500</span>ms, std::<span class="hljs-built_in">bind</span>(&amp;MinimalPublisher::timer_callback, <span class="hljs-keyword">this</span>));<br>  &#125;<br><br><span class="hljs-keyword">private</span>:<br>  <span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">timer_callback</span><span class="hljs-params">()</span></span><br><span class="hljs-function">  </span>&#123;<br>    <span class="hljs-keyword">auto</span> message = std_msgs::msg::<span class="hljs-built_in">String</span>();<br>    message.data = <span class="hljs-string">&quot;Hello, world! &quot;</span> + std::<span class="hljs-built_in">to_string</span>(count_++);<br>    <span class="hljs-built_in">RCLCPP_INFO</span>(<span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">get_logger</span>(), <span class="hljs-string">&quot;Publishing: &#x27;%s&#x27;&quot;</span>, message.data.<span class="hljs-built_in">c_str</span>());<br>    publisher_-&gt;<span class="hljs-built_in">publish</span>(message);<br>  &#125;<br>  <br>  rclcpp::TimerBase::SharedPtr timer_;<br>  rclcpp::Publisher&lt;std_msgs::msg::String&gt;::SharedPtr publisher_;<br>  <span class="hljs-type">size_t</span> count_;<br>&#125;;<br><br><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-type">int</span> argc, <span class="hljs-type">char</span> * argv[])</span></span><br><span class="hljs-function"></span>&#123;<br>  rclcpp::<span class="hljs-built_in">init</span>(argc, argv);<br>  rclcpp::<span class="hljs-built_in">spin</span>(std::<span class="hljs-built_in">make_shared</span>&lt;MinimalPublisher&gt;());<br>  rclcpp::<span class="hljs-built_in">shutdown</span>();<br>  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="实验——订阅程序"><a href="#实验——订阅程序" class="headerlink" title="实验——订阅程序"></a>实验——订阅程序</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">//src/ros2/examples/rclcpp/topics/minimal_subscriber/member_function.cpp</span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;functional&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;memory&gt;</span></span><br><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&quot;rclcpp/rclcpp.hpp&quot;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&quot;std_msgs/msg/string.hpp&quot;</span></span><br><br><span class="hljs-keyword">using</span> std::placeholders::_1;<br><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">MinimalSubscriber</span> : <span class="hljs-keyword">public</span> rclcpp::Node<br>&#123;<br><span class="hljs-keyword">public</span>:<br>  <span class="hljs-built_in">MinimalSubscriber</span>()<br>  : <span class="hljs-built_in">Node</span>(<span class="hljs-string">&quot;minimal_subscriber&quot;</span>)<br>  &#123;<br>    subscription_ = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">create_subscription</span>&lt;std_msgs::msg::String&gt;(<br>      <span class="hljs-string">&quot;topic&quot;</span>, <span class="hljs-number">10</span>, std::<span class="hljs-built_in">bind</span>(&amp;MinimalSubscriber::topic_callback, <span class="hljs-keyword">this</span>, _1));<br>  &#125;<br><br><span class="hljs-keyword">private</span>:<br>  <span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">topic_callback</span><span class="hljs-params">(<span class="hljs-type">const</span> std_msgs::msg::String &amp; msg)</span> <span class="hljs-type">const</span></span><br><span class="hljs-function">  </span>&#123;<br>    <span class="hljs-built_in">RCLCPP_INFO</span>(<span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">get_logger</span>(), <span class="hljs-string">&quot;I heard: &#x27;%s&#x27;&quot;</span>, msg.data.<span class="hljs-built_in">c_str</span>());<br>  &#125;<br>  rclcpp::Subscription&lt;std_msgs::msg::String&gt;::SharedPtr subscription_;<br>&#125;;<br><br><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-type">int</span> argc, <span class="hljs-type">char</span> * argv[])</span></span><br><span class="hljs-function"></span>&#123;<br>  rclcpp::<span class="hljs-built_in">init</span>(argc, argv);<br>  rclcpp::<span class="hljs-built_in">spin</span>(std::<span class="hljs-built_in">make_shared</span>&lt;MinimalSubscriber&gt;());<br>  rclcpp::<span class="hljs-built_in">shutdown</span>();<br>  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这两个程序是ros2官方提供example。我们现忽略对于话题和节点细节，后面逐步展开，重点关注消息调度，也就是这里的rclcpp::spin()函数。</p>
+<h2 id="全局spin"><a href="#全局spin" class="headerlink" title="全局spin()"></a>全局spin()</h2><p>如官网所述rclcpp::spin()函数其实就是SingleThreadedExecutor全局包装而已：</p>
+<p><img src="/img/assets/spin%E5%AE%98%E7%BD%91%E4%BB%8B%E7%BB%8D.png" srcset="/img/loading.gif" lazyload></p>
+<p>也就是说，上述的Publisher和Subscriber例子，都包含一个单线程执行器(rclcpp::executors::SingleThreadedExecutor)，由该执行器调度ROS2消息：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-type">int</span> argc, <span class="hljs-type">char</span> * argv[])</span></span><br><span class="hljs-function"></span>&#123;<br>  rclcpp::<span class="hljs-built_in">init</span>(argc, argv);<br>  rclcpp::<span class="hljs-built_in">spin</span>(std::<span class="hljs-built_in">make_shared</span>&lt;MinimalPublisher&gt;());<br>  rclcpp::<span class="hljs-built_in">shutdown</span>();<br>  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>代码基本等价于下方代码：新建一个单线程执行器，并把节点加入执行器。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-type">int</span> argc, <span class="hljs-type">char</span> * argv[])</span></span><br><span class="hljs-function"></span>&#123;<br>  rclcpp::<span class="hljs-built_in">init</span>(argc, argv);<br><br>  <span class="hljs-keyword">auto</span> node = std::<span class="hljs-built_in">make_shared</span>&lt;MinimalPublisher&gt;();<br><br>  rclcpp::executors::SingleThreadedExecutor executor;<br>  executor.<span class="hljs-built_in">add_node</span>(node);<br>  executor.<span class="hljs-built_in">spin</span>();<br>  <br>  rclcpp::<span class="hljs-built_in">shutdown</span>();<br>  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>以上的结论，我们从humble代码中，可以清晰的了解到：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executors.cpp</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">rclcpp::spin</span><span class="hljs-params">(rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_ptr)</span></span><br><span class="hljs-function"></span>&#123;<br>  rclcpp::ExecutorOptions options;<br>  options.context = node_ptr-&gt;<span class="hljs-built_in">get_context</span>();<br>  <span class="hljs-comment">// 建立一个单线程执行器</span><br>  rclcpp::<span class="hljs-function">executors::SingleThreadedExecutor <span class="hljs-title">exec</span><span class="hljs-params">(options)</span></span>;<br>  <span class="hljs-comment">// 把节点加入到其中</span><br>  exec.<span class="hljs-built_in">add_node</span>(node_ptr);<br>  <span class="hljs-comment">// 进入调度线程</span><br>  exec.<span class="hljs-built_in">spin</span>();<br>  exec.<span class="hljs-built_in">remove_node</span>(node_ptr);<br>&#125;<br><br><span class="hljs-comment">// 首先调用这个函数(非类成员)，然后执行重载的rclcpp::spin()</span><br><span class="hljs-comment">// 参数rclcpp::Node::SharedPtr指针的版本</span><br><span class="hljs-comment">// 直接转发到rclcpp::node_interfaces::NodeBaseInterface::SharedPtr版本</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">rclcpp::spin</span><span class="hljs-params">(rclcpp::Node::SharedPtr node_ptr)</span></span><br><span class="hljs-function"></span>&#123;<br>  rclcpp::<span class="hljs-built_in">spin</span>(node_ptr-&gt;<span class="hljs-built_in">get_node_base_interface</span>());<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<blockquote>
+<p>[!warning] 要非常注意，代码不能写成以下的形式，否则你会莫名其妙找不掉节点或话题。</p>
+</blockquote>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-type">int</span> argc, <span class="hljs-type">char</span> * argv[])</span></span><br><span class="hljs-function"></span>&#123;<br>  rclcpp::<span class="hljs-built_in">init</span>(argc, argv);<br><br>  rclcpp::executors::SingleThreadedExecutor executor;<br>  <br>  <span class="hljs-comment">// 注意这一行代码</span><br>  <span class="hljs-comment">// 在函数调用完成后，std::make_shared&lt;MinimalPublisher&gt;()返回的</span><br>  <span class="hljs-comment">// 临时变量就会被销毁</span><br>  <span class="hljs-comment">// ！！！ 不要这样写 ！！！</span><br>  executor.<span class="hljs-built_in">add_node</span>(std::<span class="hljs-built_in">make_shared</span>&lt;MinimalPublisher&gt;()); <br>  <br>  executor.<span class="hljs-built_in">spin</span>(); <span class="hljs-comment">// 直到这里才会阻塞</span><br>  <br>  rclcpp::<span class="hljs-built_in">shutdown</span>();<br>  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>解释起来不复杂，std::make_shared&lt; MinimalPublisher &gt;()创建的节点共享指针，executor.add_node()并没有保存，函数执行返回后，共享指针被销毁，导致节点和话题失效。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executor.cpp</span><br><span class="hljs-comment">// Executor是SingleThreadedExecutor父类</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">Executor::add_node</span><span class="hljs-params">(std::shared_ptr&lt;rclcpp::Node&gt; node_ptr, <span class="hljs-type">bool</span> notify)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">add_node</span>(node_ptr-&gt;<span class="hljs-built_in">get_node_base_interface</span>(), notify);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>那为什么rclcpp::spin()不会出现问题？原因是rclcpp::spin()会执行调度循环，一般不会退出来，共享指针也就被保留下来（我认为这是ros2代码缺陷，造成开发者有点精神分裂）。</p>
+<h2 id="单线程执行器（SingleThreadedExecutor）"><a href="#单线程执行器（SingleThreadedExecutor）" class="headerlink" title="单线程执行器（SingleThreadedExecutor）"></a>单线程执行器（SingleThreadedExecutor）</h2><p>让我们的关注点再回到单线程执行器上来，进入SingleThreadedExecutor::spin()看一看到底发生了什么：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">SingleThreadedExecutor::spin</span><span class="hljs-params">()</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-comment">// std::atomic_bool spinning;</span><br>  <span class="hljs-comment">// 原子变量，表示是否当前已经有人spin()，这部分防止多次spin()：</span><br>  <span class="hljs-comment">// 1. 如果没调用过spin(): spinning = true，并返回false</span><br>  <span class="hljs-comment">// 2. 如果已经spin()：spinning=true，并返回true，此时会抛出异常，程序退出</span><br>  <span class="hljs-keyword">if</span> (spinning.<span class="hljs-built_in">exchange</span>(<span class="hljs-literal">true</span>)) &#123;<br>    <span class="hljs-keyword">throw</span> std::<span class="hljs-built_in">runtime_error</span>(<span class="hljs-string">&quot;spin() called while already spinning&quot;</span>);<br>  &#125;<br><br>  <span class="hljs-comment">// 这个不细说，这行代码在异常/函数退出时，将spinning=false，</span><br>  <span class="hljs-comment">// 主要让多线程内部正常退出，防止资源泄露</span><br>  <span class="hljs-built_in">RCPPUTILS_SCOPE_EXIT</span>(<span class="hljs-keyword">this</span>-&gt;spinning.<span class="hljs-built_in">store</span>(<span class="hljs-literal">false</span>); );<br>  <br>  <span class="hljs-keyword">while</span> (rclcpp::<span class="hljs-built_in">ok</span>(<span class="hljs-keyword">this</span>-&gt;context_) &amp;&amp; spinning.<span class="hljs-built_in">load</span>()) &#123;<br>  <span class="hljs-comment">/*struct AnyExecutable</span><br><span class="hljs-comment">    &#123;</span><br><span class="hljs-comment">      RCLCPP_PUBLIC</span><br><span class="hljs-comment">      AnyExecutable();</span><br><span class="hljs-comment">    </span><br><span class="hljs-comment">      RCLCPP_PUBLIC</span><br><span class="hljs-comment">      virtual ~AnyExecutable();</span><br><span class="hljs-comment">    </span><br><span class="hljs-comment">      // Only one of the following pointers will be set.</span><br><span class="hljs-comment">      rclcpp::SubscriptionBase::SharedPtr subscription; // 话题订阅</span><br><span class="hljs-comment">      rclcpp::TimerBase::SharedPtr timer; // 定时器</span><br><span class="hljs-comment">      rclcpp::ServiceBase::SharedPtr service; // 服务端</span><br><span class="hljs-comment">      rclcpp::ClientBase::SharedPtr client; // 客户端</span><br><span class="hljs-comment">      rclcpp::Waitable::SharedPtr waitable;</span><br><span class="hljs-comment">      // These are used to keep the scope on the containing items</span><br><span class="hljs-comment">      rclcpp::CallbackGroup::SharedPtr callback_group;</span><br><span class="hljs-comment">      rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base;</span><br><span class="hljs-comment">      std::shared_ptr&lt;void&gt; data;</span><br><span class="hljs-comment">    &#125;; */</span><br>    rclcpp::AnyExecutable any_executable;<br><br>    <span class="hljs-comment">// 获取一个可调用的对象：话题订阅、定时器、服务回调、客户端回调、waitable</span><br>    <span class="hljs-keyword">if</span> (<span class="hljs-built_in">get_next_executable</span>(any_executable)) &#123;<br>      <span class="hljs-comment">// 如果获取成功，执行回调函数</span><br>      <span class="hljs-built_in">execute_any_executable</span>(any_executable);<br>    &#125;<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>整个过程就一个线程（也就是调用spin()的线程），循环尝试获取可调用对象，如果成功，就执行回调函数。这样加入到单线程执行器中节点的内部回调串行执行，流程图如下：</p>
+<p><img src="/img/assets/%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%89%A7%E8%A1%8C%E5%99%A8spin()%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B.png" srcset="/img/loading.gif" lazyload></p>
+<p>以上代码并没有说明底层发生了什么，只是强调了单线程执行器的串行执行。在ROS2 Humble官网文档中，有一张图简单说明了调度过程，这里补充下调度细节，以便大家更好理解后续多线程执行器的流程。<a target="_blank" rel="noopener" href="https://docs.ros.org/en/humble/Concepts/Intermediate/About-Executors.html">Executors — ROS 2 Documentation: Humble documentation</a></p>
+<p><img src="/img/assets/executor%E5%BD%A2%E8%B1%A1%E6%B5%81%E7%A8%8B.png" srcset="/img/loading.gif" lazyload></p>
+<ul>
+<li>左图上方圆形表示回调函数，例如processOdom()是&#x2F;odom话题的回调</li>
+<li>左图下方信封形状代表接收到数据，例如&#x2F;goal有两个数据，&#x2F;odom有三个数据，&#x2F;cmd没有数据</li>
+<li>左图中间说明了调度的三个过程：<ol>
+<li>wait：尝试等待底层(Middleware)数据到来。初始化wait_set，并根据底层数据情况，设置wait_set（wait_set可以简单理解成数组，每个数组元素表示队列里是否有可处理的数据，1表示有可处理数据，0表示没有数据）。图中&#x2F;goal和&#x2F;odom有消息，对应的掩码就是1，&#x2F;cmd没有消息，对应的掩码就是0。所以wait_set就是101。这个过程在get_next_executable()函数中。</li>
+<li>take：会获取一个可执行对象，这个过程在get_next_executable()函数中。</li>
+<li>execute：执行回调函数，拿到可调用对象的线程，会直接调用回调函数。这个过程在execute_any_executable()函数中。</li>
+</ol>
+</li>
+</ul>
+<h2 id="多线程执行器（MultiThreadedExecutor）"><a href="#多线程执行器（MultiThreadedExecutor）" class="headerlink" title="多线程执行器（MultiThreadedExecutor）"></a>多线程执行器（MultiThreadedExecutor）</h2><p>在进入多线程执行器前，先说明下为什么要用多线程执行器，要回答这个问题，先来看看单线程执行器有什么问题：</p>
+<ol>
+<li>单线程执行器，所有回调都是串行执行，如果其中回调执行的工作比较多，其他回调必须等待，造成调度后延</li>
+<li>即使回调执行很短，但如果你有很多回调需要服务，甚至需要他们同时执行，单线程执行器很难满足</li>
+<li>如果你想在topic&#x2F;service回调中，执行一个阻塞的操作（如发送另一个service请求并同步等待响应），你就会遇到程序卡死问题<br>多线程执行器的引入，直接通过启动多个线程，带来回调执行上的并发，可以有效接触调用阻塞，提高节点的响应。当然，编程世界里没有银弹，多线程执行器同样带来很多隐含的特性，而且这些特性并不是很容易理解。我在这里先抛出几个问题，如果你不能清晰地回答，或许接下来分析会对你有所帮助：</li>
+</ol>
+<ul>
+<li>问题1：多线程执行器与单线程执行器有关系？执行器会启动多少线程？</li>
+<li>问题2：多线程执行器spin()和单线程spin()差异在哪里？</li>
+<li>问题3：什么是回调组？”Mutually Exclusive Callback Group”和”Reentrant Callback Group”区别是什么？</li>
+<li>问题4：多线程执行器并行调度的单元是什么，是节点吗？怎么做到回调并发执行？</li>
+<li>问题5：”Reentrant Callback Group”能否导致同一个节点的同一个话题的回调，被多个线程并发调用？</li>
+</ul>
+<h2 id="实验程序"><a href="#实验程序" class="headerlink" title="实验程序"></a>实验程序</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/examples/rclcpp/executors/multithreaded_executor/multithreaded_executor.cpp</span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;chrono&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;functional&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;memory&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;string&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;thread&gt;</span></span><br><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&quot;rclcpp/rclcpp.hpp&quot;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&quot;std_msgs/msg/string.hpp&quot;</span></span><br><br><span class="hljs-keyword">using</span> <span class="hljs-keyword">namespace</span> std::chrono_literals;<br><br><span class="hljs-function">std::string <span class="hljs-title">string_thread_id</span><span class="hljs-params">()</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-keyword">auto</span> hashed = std::<span class="hljs-built_in">hash</span>&lt;std::thread::id&gt;()(std::this_thread::<span class="hljs-built_in">get_id</span>());<br>  <span class="hljs-keyword">return</span> std::<span class="hljs-built_in">to_string</span>(hashed);<br>&#125;<br><br><span class="hljs-comment">// 发送话题节点</span><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">PublisherNode</span> : <span class="hljs-keyword">public</span> rclcpp::Node<br>&#123;<br><span class="hljs-keyword">public</span>:<br>  <span class="hljs-built_in">PublisherNode</span>()<br>  : <span class="hljs-built_in">Node</span>(<span class="hljs-string">&quot;PublisherNode&quot;</span>), <span class="hljs-built_in">count_</span>(<span class="hljs-number">0</span>)<br>  &#123;<br>    publisher_ = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">create_publisher</span>&lt;std_msgs::msg::String&gt;(<span class="hljs-string">&quot;topic&quot;</span>, <span class="hljs-number">10</span>);<br>    <span class="hljs-keyword">auto</span> timer_callback =<br>      [<span class="hljs-keyword">this</span>]() -&gt; <span class="hljs-type">void</span> &#123;<br>        <span class="hljs-keyword">auto</span> message = std_msgs::msg::<span class="hljs-built_in">String</span>();<br>        message.data = <span class="hljs-string">&quot;Hello World! &quot;</span> + std::<span class="hljs-built_in">to_string</span>(<span class="hljs-keyword">this</span>-&gt;count_++);<br><br>        <span class="hljs-comment">// Extract current thread</span><br>        <span class="hljs-keyword">auto</span> curr_thread = <span class="hljs-built_in">string_thread_id</span>();<br><br>        <span class="hljs-comment">// 定时器每隔一段时间会发送自己线程ID</span><br>        <span class="hljs-built_in">RCLCPP_INFO</span>(<br>          <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">get_logger</span>(), <span class="hljs-string">&quot;\n&lt;&lt;THREAD %s&gt;&gt; Publishing &#x27;%s&#x27;&quot;</span>,<br>          curr_thread.<span class="hljs-built_in">c_str</span>(), message.data.<span class="hljs-built_in">c_str</span>());<br>        <span class="hljs-keyword">this</span>-&gt;publisher_-&gt;<span class="hljs-built_in">publish</span>(message);<br>      &#125;;<br>    timer_ = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">create_wall_timer</span>(<span class="hljs-number">500</span>ms, timer_callback);<br>  &#125;<br><br><span class="hljs-keyword">private</span>:<br>  rclcpp::TimerBase::SharedPtr timer_;<br>  rclcpp::Publisher&lt;std_msgs::msg::String&gt;::SharedPtr publisher_;<br>  <span class="hljs-type">size_t</span> count_;<br>&#125;;<br><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">DualThreadedNode</span> : <span class="hljs-keyword">public</span> rclcpp::Node<br>&#123;<br><span class="hljs-keyword">public</span>:<br>  <span class="hljs-built_in">DualThreadedNode</span>()<br>  : <span class="hljs-built_in">Node</span>(<span class="hljs-string">&quot;DualThreadedNode&quot;</span>)<br>  &#123;<br>    <span class="hljs-comment">/* These define the callback groups</span><br><span class="hljs-comment">     * They don&#x27;t really do much on their own, but they have to exist in order to</span><br><span class="hljs-comment">     * assign callbacks to them. They&#x27;re also what the executor looks for when trying to run multiple threads</span><br><span class="hljs-comment">     */</span><br>    callback_group_subscriber1_ = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">create_callback_group</span>(<br>      rclcpp::CallbackGroupType::MutuallyExclusive);<br>    callback_group_subscriber2_ = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">create_callback_group</span>(<br>      rclcpp::CallbackGroupType::MutuallyExclusive);<br><br>    <span class="hljs-comment">// Each of these callback groups is basically a thread</span><br>    <span class="hljs-comment">// Everything assigned to one of them gets bundled into the same thread</span><br>    <span class="hljs-keyword">auto</span> sub1_opt = rclcpp::<span class="hljs-built_in">SubscriptionOptions</span>();<br>    sub1_opt.callback_group = callback_group_subscriber1_;<br>    <span class="hljs-keyword">auto</span> sub2_opt = rclcpp::<span class="hljs-built_in">SubscriptionOptions</span>();<br>    sub2_opt.callback_group = callback_group_subscriber2_;<br><br>    subscription1_ = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">create_subscription</span>&lt;std_msgs::msg::String&gt;(<br>      <span class="hljs-string">&quot;topic&quot;</span>,<br>      rclcpp::<span class="hljs-built_in">QoS</span>(<span class="hljs-number">10</span>),<br>      <span class="hljs-comment">// std::bind is sort of C++&#x27;s way of passing a function</span><br>      <span class="hljs-comment">// If you&#x27;re used to function-passing, skip these comments</span><br>      std::<span class="hljs-built_in">bind</span>(<br>        &amp;DualThreadedNode::subscriber1_cb,  <span class="hljs-comment">// First parameter is a reference to the function</span><br>        <span class="hljs-keyword">this</span>,                               <span class="hljs-comment">// What the function should be bound to</span><br>        std::placeholders::_1),             <span class="hljs-comment">// At this point we&#x27;re not positive of all the</span><br>                                            <span class="hljs-comment">// parameters being passed</span><br>                                            <span class="hljs-comment">// So we just put a generic placeholder</span><br>                                            <span class="hljs-comment">// into the binder</span><br>                                            <span class="hljs-comment">// (since we know we need ONE parameter)</span><br>      sub1_opt);                  <span class="hljs-comment">// This is where we set the callback group.</span><br>                                  <span class="hljs-comment">// This subscription will run with callback group subscriber1</span><br><br>    subscription2_ = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">create_subscription</span>&lt;std_msgs::msg::String&gt;(<br>      <span class="hljs-string">&quot;topic&quot;</span>,<br>      rclcpp::<span class="hljs-built_in">QoS</span>(<span class="hljs-number">10</span>),<br>      std::<span class="hljs-built_in">bind</span>(<br>        &amp;DualThreadedNode::subscriber2_cb,<br>        <span class="hljs-keyword">this</span>,<br>        std::placeholders::_1),<br>      sub2_opt);<br>  &#125;<br><br><span class="hljs-keyword">private</span>:<br>  <span class="hljs-function">std::string <span class="hljs-title">timing_string</span><span class="hljs-params">()</span></span><br><span class="hljs-function">  </span>&#123;<br>    rclcpp::Time time = <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">now</span>();<br>    <span class="hljs-keyword">return</span> std::<span class="hljs-built_in">to_string</span>(time.<span class="hljs-built_in">nanoseconds</span>());<br>  &#125;<br><br>  <span class="hljs-comment">/**</span><br><span class="hljs-comment">   * Every time the Publisher publishes something, all subscribers to the topic get poked</span><br><span class="hljs-comment">   * This function gets called when Subscriber1 is poked (due to the std::bind we used when defining it)</span><br><span class="hljs-comment">   */</span><br>  <span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">subscriber1_cb</span><span class="hljs-params">(<span class="hljs-type">const</span> std_msgs::msg::String::ConstSharedPtr msg)</span></span><br><span class="hljs-function">  </span>&#123;<br>    <span class="hljs-keyword">auto</span> message_received_at = <span class="hljs-built_in">timing_string</span>();<br><br>    <span class="hljs-comment">// Extract current thread</span><br>    <span class="hljs-built_in">RCLCPP_INFO</span>(<br>      <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">get_logger</span>(), <span class="hljs-string">&quot;THREAD %s =&gt; Heard &#x27;%s&#x27; at %s&quot;</span>,<br>      <span class="hljs-built_in">string_thread_id</span>().<span class="hljs-built_in">c_str</span>(), msg-&gt;data.<span class="hljs-built_in">c_str</span>(), message_received_at.<span class="hljs-built_in">c_str</span>());<br>  &#125;<br><br>  <span class="hljs-comment">/**</span><br><span class="hljs-comment">   * This function gets called when Subscriber2 is poked</span><br><span class="hljs-comment">   * Since it&#x27;s running on a separate thread than Subscriber 1, it will run at (more-or-less) the same time!</span><br><span class="hljs-comment">   */</span><br>  <span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">subscriber2_cb</span><span class="hljs-params">(<span class="hljs-type">const</span> std_msgs::msg::String::ConstSharedPtr msg)</span></span><br><span class="hljs-function">  </span>&#123;<br>    <span class="hljs-keyword">auto</span> message_received_at = <span class="hljs-built_in">timing_string</span>();<br><br>    <span class="hljs-comment">// Prep display message</span><br>    <span class="hljs-built_in">RCLCPP_INFO</span>(<br>      <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">get_logger</span>(), <span class="hljs-string">&quot;THREAD %s =&gt; Heard &#x27;%s&#x27; at %s&quot;</span>,<br>      <span class="hljs-built_in">string_thread_id</span>().<span class="hljs-built_in">c_str</span>(), msg-&gt;data.<span class="hljs-built_in">c_str</span>(), message_received_at.<span class="hljs-built_in">c_str</span>());<br>  &#125;<br><br>  rclcpp::CallbackGroup::SharedPtr callback_group_subscriber1_;<br>  rclcpp::CallbackGroup::SharedPtr callback_group_subscriber2_;<br>  rclcpp::Subscription&lt;std_msgs::msg::String&gt;::SharedPtr subscription1_;<br>  rclcpp::Subscription&lt;std_msgs::msg::String&gt;::SharedPtr subscription2_;<br>&#125;;<br><br><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-type">int</span> argc, <span class="hljs-type">char</span> * argv[])</span></span><br><span class="hljs-function"></span>&#123;<br>  rclcpp::<span class="hljs-built_in">init</span>(argc, argv);<br><br>  <span class="hljs-comment">// You MUST use the MultiThreadedExecutor to use, well, multiple threads</span><br>  rclcpp::executors::MultiThreadedExecutor executor;<br>  <span class="hljs-keyword">auto</span> pubnode = std::<span class="hljs-built_in">make_shared</span>&lt;PublisherNode&gt;();<br>  <span class="hljs-keyword">auto</span> subnode = std::<span class="hljs-built_in">make_shared</span>&lt;DualThreadedNode&gt;();                                          <br>  <br>  executor.<span class="hljs-built_in">add_node</span>(pubnode);<br>  executor.<span class="hljs-built_in">add_node</span>(subnode);<br>  executor.<span class="hljs-built_in">spin</span>();<br>  rclcpp::<span class="hljs-built_in">shutdown</span>();<br>  <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<p>以上仍然是ROS2官方example。我们分析仍然从主函数开始，主函数定义了多线程调度器，并且同时加入了发布节点和接收节点，executor.spin()进入了调度循环，我们暂时忽略类内回调组，下面会分析。</p>
+<h3 id="执行器关系"><a href="#执行器关系" class="headerlink" title="执行器关系"></a>执行器关系</h3><p>从代码结构上看，多线程执行器和单线程执行器相似度很高，你甚至可以把这段代码中多线程调度器替换成单线程调度器，同样可以编译。这两种执行器都是继承同一父类，代码结构类似。</p>
+<p><img src="/img/assets/executor%E7%BB%A7%E6%89%BF%E5%85%B3%E7%B3%BB.png" srcset="/img/loading.gif" lazyload></p>
+<p>多线程执行器对象创建时，构造函数可以调整启动线程数目，而线程创建和执行在spin()中完成，多线程的引入，给并发地执行回调提供了可能：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs c++">MultiThreadedExecutor::<span class="hljs-built_in">MultiThreadedExecutor</span>(<br>  <span class="hljs-type">const</span> rclcpp::ExecutorOptions &amp; options,<br>  <span class="hljs-type">size_t</span> number_of_threads,<br>  <span class="hljs-type">bool</span> yield_before_execute,<br>  std::chrono::nanoseconds next_exec_timeout)<br>: rclcpp::<span class="hljs-built_in">Executor</span>(options),<br>  <span class="hljs-built_in">yield_before_execute_</span>(yield_before_execute),<br>  <span class="hljs-built_in">next_exec_timeout_</span>(next_exec_timeout)<br>&#123;<br>  number_of_threads_ = number_of_threads ? number_of_threads : std::thread::<span class="hljs-built_in">hardware_concurrency</span>();<br>  <span class="hljs-keyword">if</span> (number_of_threads_ == <span class="hljs-number">0</span>) &#123;<br>    number_of_threads_ = <span class="hljs-number">1</span>;<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<blockquote>
+<p>[!note] 问题1：多线程执行器，与单线程执行器有关系？执行器会启动多少线程？<br>(1)单线程执行器和多线程执行器继承自同一个父类，具有相似的编码结构。<br>(2)在多线程执行器构造时，可以指定大于0的线程数目，或者默认线程数目”std::thread::hardware_concurrency()”，一般为机器CPU核心数。</p>
+</blockquote>
+<h3 id="多线程执行器spin"><a href="#多线程执行器spin" class="headerlink" title="多线程执行器spin()"></a>多线程执行器spin()</h3><p>虽然代码结构相似，但spin()行为却差异很大，多线程执行器启动多个线程，以便未来并发地执行回调：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">//src/ros2/rclcpp/rclcpp/src/rclcpp/executors/multi_threaded_executor.cpp</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">MultiThreadedExecutor::spin</span><span class="hljs-params">()</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-comment">// 这部分与单线程执行器一致，都是为了防止多次spin()</span><br>  <span class="hljs-keyword">if</span> (spinning.<span class="hljs-built_in">exchange</span>(<span class="hljs-literal">true</span>)) &#123;<br>    <span class="hljs-keyword">throw</span> std::<span class="hljs-built_in">runtime_error</span>(<span class="hljs-string">&quot;spin() called while already spinning&quot;</span>);<br>  &#125;<br>  <span class="hljs-built_in">RCPPUTILS_SCOPE_EXIT</span>(<span class="hljs-keyword">this</span>-&gt;spinning.<span class="hljs-built_in">store</span>(<span class="hljs-literal">false</span>); );<br>  std::vector&lt;std::thread&gt; threads;<br>  <span class="hljs-type">size_t</span> thread_id = <span class="hljs-number">0</span>;<br>  <br>  <span class="hljs-comment">// 启动多个线程，值得注意的是：</span><br>  <span class="hljs-comment">// 1. 所有线程启动都在锁内保护，这个锁在run函数里也会用到</span><br>  <span class="hljs-comment">// 2. 注意这里少了一个线程，因为调用spin()函数的那个线程也要被使用，例如执行器开启8个线程：7个新线程+1个启动线程（启动7个线程的线程）</span><br>  <span class="hljs-comment">// 注：这里我也感觉是一个编程缺陷，作者可能想着同步所有线程，却把启动线程放在外边，可以考虑使用其他同步机制</span><br>  &#123;<br>    std::lock_guard wait_lock&#123;wait_mutex_&#125;;<br>    <span class="hljs-keyword">for</span> (; thread_id &lt; number_of_threads_ - <span class="hljs-number">1</span>; ++thread_id) &#123;<br>      <span class="hljs-keyword">auto</span> func = std::<span class="hljs-built_in">bind</span>(&amp;MultiThreadedExecutor::run, <span class="hljs-keyword">this</span>, thread_id);<br>      threads.<span class="hljs-built_in">emplace_back</span>(func);<br>    &#125;<br>  &#125;<br><br>  <span class="hljs-comment">// 启动线程也运行run()</span><br>  <span class="hljs-built_in">run</span>(thread_id);<br>  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">auto</span> &amp; thread : threads) &#123;<br>    thread.<span class="hljs-built_in">join</span>();<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>也就是说，多线程执行器在spin()中启动了MultiThreadedExecutor::number_of_threads_个线程，并发运行MultiThreadedExecutor::run()函数。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">//src/ros2/rclcpp/rclcpp/src/rclcpp/executors/multi_threaded_executor.cpp</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">MultiThreadedExecutor::run</span><span class="hljs-params">(<span class="hljs-type">size_t</span> this_thread_number)</span></span><br><span class="hljs-function"></span>&#123;<br>  (<span class="hljs-type">void</span>)this_thread_number;<br>  <span class="hljs-keyword">while</span> (rclcpp::<span class="hljs-built_in">ok</span>(<span class="hljs-keyword">this</span>-&gt;context_) &amp;&amp; spinning.<span class="hljs-built_in">load</span>()) &#123;<br>    rclcpp::AnyExecutable any_exec;<br>    <span class="hljs-comment">// !!! 注意这里，代码这里也加了wait_mutex_锁</span><br>    &#123;<br>      std::lock_guard wait_lock&#123;wait_mutex_&#125;;<br>      <span class="hljs-keyword">if</span> (!rclcpp::<span class="hljs-built_in">ok</span>(<span class="hljs-keyword">this</span>-&gt;context_) || !spinning.<span class="hljs-built_in">load</span>()) &#123;<br>        <span class="hljs-keyword">return</span>;<br>      &#125;<br>      <br>      <span class="hljs-comment">// 尝试获取一个可调用对象</span><br>      <span class="hljs-comment">// 这部分在wait_mutex_锁内，所以同时只有一个线程能进入</span><br>      <span class="hljs-keyword">if</span> (!<span class="hljs-built_in">get_next_executable</span>(any_exec, next_exec_timeout_)) &#123;<br>        <span class="hljs-keyword">continue</span>;<br>      &#125;<br>    &#125;<br>    <span class="hljs-keyword">if</span> (yield_before_execute_) &#123;<br>      std::this_thread::<span class="hljs-built_in">yield</span>();<br>    &#125;<br><br>    <span class="hljs-comment">// 执行可调用对象</span><br>    <span class="hljs-comment">// 这部分在wait_mutex_锁外部，所以可以并发地执行</span><br>    <span class="hljs-built_in">execute_any_executable</span>(any_exec);<br>    <br>    <span class="hljs-comment">// 可调用对象已经无用了，删除</span><br>    any_exec.callback_group.<span class="hljs-built_in">reset</span>();<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>和单线程执行器类似，这里同样通过是get_next_executable()-&gt;execute_any_executable()。<br>注意代码包含wait_mutex_锁位置，查询并获取下一个可调用对象的函数get_next_executable()，不是并行执行，而且<strong>多线程间互斥执行</strong>的。执行可回调的函数execute_any_executable()，并没有wait_mutex_锁的保护，所以是<strong>可以</strong>并行执行的。</p>
+<p><img src="/img/assets/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%89%A7%E8%A1%8C%E5%99%A8spin()%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B.png" srcset="/img/loading.gif" lazyload></p>
+<blockquote>
+<p>[!note] 问题2：多线程执行器spin()和单线程spin()差异在哪里？</p>
+<ol>
+<li>多线程执行器的spin()启动多个线程，如果用户只启动一个线程，就退化到单线程执行器</li>
+<li>spin()互斥执行get_next_executable()，并发执行execute_any_executable()，给予回调并发执行能力</li>
+</ol>
+</blockquote>
+<h3 id="回调组"><a href="#回调组" class="headerlink" title="回调组"></a>回调组</h3><p>到这里你可能以为：所有的回调函数在多线程执行器调度下都是并发执行的，这个结论仍然是不充分的。<br>以上论述仅仅能说明：多线程执行器提供并行执行能力，但并没有说明并发执行的单元是谁？并发会不会由于某些限制，退化到串行执行？回调函数是不是会发生重入？等。要解释清楚这些，就要从回调组说起，先直接给出问题3-问题5的答案，然后再分析代码。<br>以下是官方的回调组定义（<a target="_blank" rel="noopener" href="https://docs.ros.org/en/humble/How-To-Guides/Using-callback-groups.html">Using Callback Groups — ROS 2 Documentation: Humble documentation</a>）：</p>
+<p><img src="/img/assets/callback_group%E5%AE%9A%E4%B9%89.png" srcset="/img/loading.gif" lazyload></p>
+<p>比较简单明了，这里总结一下回调组的差异：</p>
+<blockquote>
+<p>[!note] 问题3：什么是回调组？”Mutually Exclusive Callback Group”和”Reentrant Callback Group”区别是什么？<br>回调组是用来控制回调并发执行的回调集合（在多线程执行器有实际意义，因为单线程执行器本身就是串行的），从调度角度看，ROS2 Node可以理解为回调组的集合，节点包含多个回调组（节点默认会创建一个互斥回调组），回调组分为两种：</p>
+<ol>
+<li>互斥回调组（Mutually Exclusive Callback Group）：不同回调组回调可并发地执行，同一个回调组的回调串行地执行；</li>
+<li>可重入回调组（Reentrant Callback Group）：没有限制，不同回调组的回调可并发地执行，同一个回调组的回调也可并发地执行。</li>
+</ol>
+</blockquote>
+<blockquote>
+<p>[!note] 问题4：多线程执行器并行调度的单元是什么，是节点吗？怎么做到回调并行执行？<br>多线程执行器调度基本单元是回调函数。节点是回调组的集合，每个回调组可以包含多个回调，回调组通过设置不同的属性（互斥或重入）控制回调并发执行的行为。</p>
+</blockquote>
+<p>在官网的说明，对于Reentrant Callback Group中有一句话：This means that, in addition to different callbacks being run parallel to each other, different instances of the same callback may also be executed concurrently.</p>
+<blockquote>
+<p>[!note] 问题5：”Reentrant Callback Group”能否导致同一个节点的同一个话题的回调，被多个线程并发调用？<br>可以，也就是说在多线程执行器中，如果消息或请求持续到来，并且有空闲线程，那么同一个回调会被并行执行。这是一个“危险的”特性，这要求函数可重入，个人推测这也是Reentrant Callback Group名字中Reentrant的由来。</p>
+</blockquote>
+<p>大家对于以上的特性有了概念后，我们就能继续分析代码，并且说明ros2 humble怎么通过代码实现以上的特性。再次祭出官网的调度图（以下简称：<strong>调度图</strong>），只不过这一次调度被并行执行。</p>
+<p><img src="/img/assets/executor%E5%BD%A2%E8%B1%A1%E6%B5%81%E7%A8%8B.png" srcset="/img/loading.gif" lazyload></p>
+<p>如之前单线程执行器中所述，整个过程核心就是：</p>
+<ul>
+<li>等待并获取可调用对象在Executor::get_next_executable()中，分别对应1)wait和2)take；</li>
+<li>执行可调用对象回调函数在Executor::execute_any_executable()中，对应3)execute。<br>具体代码和注释如下：</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executor.cpp</span><br><span class="hljs-comment">// 获取下一个可调用对象，我们暂时不考虑这里timeout，任务这里会持续等待</span><br><span class="hljs-function"><span class="hljs-type">bool</span> <span class="hljs-title">Executor::get_next_executable</span><span class="hljs-params">(AnyExecutable &amp; any_executable, std::chrono::nanoseconds timeout)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-type">bool</span> success = <span class="hljs-literal">false</span>;<br>  <span class="hljs-comment">// 检查是否有可调用的对象：话题、服务、定时器等</span><br>  <span class="hljs-comment">// 作者也在这里加入了TODO，因为这里是循环对比所有请求对象是否有效，所以在底层请求对象（如话题）超级多的情况下，会给CPU形成明显的负担</span><br>  <span class="hljs-comment">// TODO(wjwwood): improve run to run efficiency of this function</span><br>  success = <span class="hljs-built_in">get_next_ready_executable</span>(any_executable);<br>  <span class="hljs-keyword">if</span> (!success) &#123;<br>    <span class="hljs-comment">// 如果没有获取成功，就尝试从底层等待消息的到来</span><br>    <span class="hljs-built_in">wait_for_work</span>(timeout);<br>    <br>    <span class="hljs-comment">// 确保spining持续进行，外部没有退出</span><br>    <span class="hljs-keyword">if</span> (!spinning.<span class="hljs-built_in">load</span>()) &#123;<br>      <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;<br>    &#125;<br>    <br>    <span class="hljs-comment">// 忽略timeout的话，消息或请求应该是等到了，再次尝试是否能够拿到可调用对象</span><br>    success = <span class="hljs-built_in">get_next_ready_executable</span>(any_executable);<br>  &#125;<br>  <span class="hljs-keyword">return</span> success;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>之前说过，get_next_executable()在多线程执行器中，是互斥执行的。也就是说同时只有一个线程会执行该函数，暂时不必担心该函数的线程安全问题。<br>wait_for_work()就是调度图中的1)wait，而get_next_ready_executable()函数就是调度图中的2)take。举个例子，假设这次没有拿到可调用对象，执行了wait_for_work()尝试更新wait_set，具体代码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executor.cpp</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">Executor::wait_for_work</span><span class="hljs-params">(std::chrono::nanoseconds timeout)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-built_in">TRACEPOINT</span>(rclcpp_executor_wait_for_work, timeout.<span class="hljs-built_in">count</span>());<br>  &#123;<br>    <span class="hljs-function">std::lock_guard&lt;std::mutex&gt; <span class="hljs-title">guard</span><span class="hljs-params">(mutex_)</span></span>;<br><br>    <span class="hljs-comment">// 将执行器下的所有回调组，加入到Executor的map数据结构里，方便索引</span><br>    <span class="hljs-built_in">add_callback_groups_from_nodes_associated_to_executor</span>();<br><br>    <span class="hljs-comment">// 收集所有的准备消息订阅、服务、客户端、定时器、waitable，这些都以handles形式存储到memory_strategy_</span><br>    <span class="hljs-comment">// ！！collect_entities中包含有一个group-&gt;can_be_taken_from().load()，可以防止正在执行的互斥回调组二次加入，后面细说</span><br>    memory_strategy_-&gt;<span class="hljs-built_in">clear_handles</span>();<br>    <span class="hljs-type">bool</span> has_invalid_weak_groups_or_nodes =<br>      memory_strategy_-&gt;<span class="hljs-built_in">collect_entities</span>(weak_groups_to_nodes_);<br><br>    <span class="hljs-keyword">if</span> (has_invalid_weak_groups_or_nodes) &#123;<br>      <span class="hljs-comment">// 无效的group和node处理，不关心</span><br>      <span class="hljs-comment">//.....</span><br>    &#125;<br><br>    <span class="hljs-comment">// 清空wait_set，注意这里调用的是rcl(ROS Client Support Library)库，具体底层暂时不关心</span><br>    <span class="hljs-type">rcl_ret_t</span> ret = <span class="hljs-built_in">rcl_wait_set_clear</span>(&amp;wait_set_);<br>    <span class="hljs-keyword">if</span> (ret != RCL_RET_OK) &#123;<br>      <span class="hljs-built_in">throw_from_rcl_error</span>(ret, <span class="hljs-string">&quot;Couldn&#x27;t clear wait set&quot;</span>);<br>    &#125;<br><br>    <span class="hljs-comment">// 根据收集的订阅、定时器等，重新申请wait_set内部数据结构内存</span><br>    <span class="hljs-comment">// 奇怪的是：这里传递的size参数都没用，直接从底层确定订阅、定时器等数量</span><br>    ret = <span class="hljs-built_in">rcl_wait_set_resize</span>(<br>      &amp;wait_set_, memory_strategy_-&gt;<span class="hljs-built_in">number_of_ready_subscriptions</span>(),<br>      memory_strategy_-&gt;<span class="hljs-built_in">number_of_guard_conditions</span>(), memory_strategy_-&gt;<span class="hljs-built_in">number_of_ready_timers</span>(),<br>      memory_strategy_-&gt;<span class="hljs-built_in">number_of_ready_clients</span>(), memory_strategy_-&gt;<span class="hljs-built_in">number_of_ready_services</span>(),<br>      memory_strategy_-&gt;<span class="hljs-built_in">number_of_ready_events</span>());<br>    <span class="hljs-keyword">if</span> (RCL_RET_OK != ret) &#123;<br>      <span class="hljs-built_in">throw_from_rcl_error</span>(ret, <span class="hljs-string">&quot;Couldn&#x27;t resize the wait set&quot;</span>);<br>    &#125;<br><br>    <span class="hljs-comment">// 把需要等待的订阅、定时器、客户端、服务端对象加入到待等待集合，并设置好rmw底层数据结构</span><br>    <span class="hljs-comment">// 函数会填充类似wait_set-&gt;impl-&gt;rmw_type.type[i]数据结构（一堆宏函数）</span><br>    <span class="hljs-keyword">if</span> (!memory_strategy_-&gt;<span class="hljs-built_in">add_handles_to_wait_set</span>(&amp;wait_set_)) &#123;<br>      <span class="hljs-keyword">throw</span> std::<span class="hljs-built_in">runtime_error</span>(<span class="hljs-string">&quot;Couldn&#x27;t fill wait set&quot;</span>);<br>    &#125;<br>  &#125;<br><br>  <span class="hljs-comment">// 等待，内部调用了rmw_wait等待</span><br>  <span class="hljs-comment">// 函数会根据消息有无、定时器是否到期等，填充类似wait_set-&gt;impl-&gt;rmw_type.types[i]设置</span><br>  <span class="hljs-type">rcl_ret_t</span> status =<br>    <span class="hljs-built_in">rcl_wait</span>(&amp;wait_set_, std::chrono::<span class="hljs-built_in">duration_cast</span>&lt;std::chrono::nanoseconds&gt;(timeout).<span class="hljs-built_in">count</span>());<br>  <span class="hljs-keyword">if</span> (status == RCL_RET_WAIT_SET_EMPTY) &#123;<br>    <span class="hljs-built_in">RCUTILS_LOG_WARN_NAMED</span>(<br>      <span class="hljs-string">&quot;rclcpp&quot;</span>,<br>      <span class="hljs-string">&quot;empty wait set received in rcl_wait(). This should never happen.&quot;</span>);<br>  &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (status != RCL_RET_OK &amp;&amp; status != RCL_RET_TIMEOUT) &#123;<br>    <span class="hljs-keyword">using</span> rclcpp::exceptions::throw_from_rcl_error;<br>    <span class="hljs-built_in">throw_from_rcl_error</span>(status, <span class="hljs-string">&quot;rcl_wait() failed&quot;</span>);<br>  &#125;<br><br>  <span class="hljs-comment">// check the null handles in the wait set and remove them from the handles in memory strategy</span><br>  <span class="hljs-comment">// for callback-based entities</span><br>  <span class="hljs-function">std::lock_guard&lt;std::mutex&gt; <span class="hljs-title">guard</span><span class="hljs-params">(mutex_)</span></span>;<br>  <span class="hljs-comment">// wait_set_没有准备好的订阅、定时器等对象会是NULL，会在这里被从Executor的Handles数组清除，没有被清除的元素都是有效的请求</span><br>  <span class="hljs-comment">// 在后面做2)take的时候，直接对比的是Executor的Handles数据结构和节点中的订阅、定时器等，确定对象是否有效</span><br>  memory_strategy_-&gt;<span class="hljs-built_in">remove_null_handles</span>(&amp;wait_set_);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>上面代码大致：在收集完订阅、定时器、服务端、客户端、waitable对象后，初始化rmw底层数据结构，并调用rcl_wait()尝试等待(注意这里wait_set_具有复杂数据结构，并非简单数组)。<br>在rcl_wait()内部调用rmw_wait()，确定消息订阅有没有数据、定时器是否就绪等，并基于此更新wait_set_数据结构(调度图中wait_set&#x3D;101，就是指&#x2F;goal、&#x2F;odom有数据，&#x2F;cmd无数据)。然后拿到wait_set_后，Executor根据wait_set_更新自己的内部数据结构memory_strategy_，简单说就是从订阅、定时器等Handles数组中，抹去无数据的订阅、没有就绪定时器等（对应位置设置为NULL），方便之后2)take循环检查。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rcl/rcl/src/rcl/wait.c</span><br><span class="hljs-function"><span class="hljs-type">rcl_ret_t</span> <span class="hljs-title">rcl_wait</span><span class="hljs-params">(<span class="hljs-type">rcl_wait_set_t</span> * wait_set, <span class="hljs-type">int64_t</span> timeout)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-comment">// ... timeout等处理，跳过</span><br><br>  <span class="hljs-comment">// 尝试等待 </span><br>  <span class="hljs-type">rmw_ret_t</span> ret = <span class="hljs-built_in">rmw_wait</span>(<br>    &amp;wait_set-&gt;impl-&gt;rmw_subscriptions,<br>    &amp;wait_set-&gt;impl-&gt;rmw_guard_conditions,<br>    &amp;wait_set-&gt;impl-&gt;rmw_services,<br>    &amp;wait_set-&gt;impl-&gt;rmw_clients,<br>    &amp;wait_set-&gt;impl-&gt;rmw_events,<br>    wait_set-&gt;impl-&gt;rmw_wait_set,<br>    timeout_argument);<br>    <br>  <span class="hljs-comment">// 对于还没准备好的定时器、订阅，更新对应的handles数组，设置为NULL</span><br>  <br>  <span class="hljs-type">size_t</span> i;<br>  <span class="hljs-keyword">for</span> (i = <span class="hljs-number">0</span>; i &lt; wait_set-&gt;impl-&gt;timer_index; ++i) &#123;<br>    <span class="hljs-keyword">if</span> (!wait_set-&gt;timers[i]) &#123;<br>      <span class="hljs-keyword">continue</span>;<br>    &#125;<br>    <span class="hljs-type">bool</span> is_ready = <span class="hljs-literal">false</span>;<br>    <span class="hljs-type">rcl_ret_t</span> ret = <span class="hljs-built_in">rcl_timer_is_ready</span>(wait_set-&gt;timers[i], &amp;is_ready);<br>    <span class="hljs-keyword">if</span> (ret != RCL_RET_OK) &#123;<br>      <span class="hljs-keyword">return</span> ret;  <span class="hljs-comment">// The rcl error state should already be set.</span><br>    &#125;<br>    <span class="hljs-keyword">if</span> (!is_ready) &#123;<br>      wait_set-&gt;timers[i] = <span class="hljs-literal">NULL</span>;<br>    &#125;<br>  &#125;<br>  <br>  <span class="hljs-comment">//.....</span><br>  <br>  <span class="hljs-comment">// Set corresponding rcl subscription handles NULL.</span><br>  <span class="hljs-keyword">for</span> (i = <span class="hljs-number">0</span>; i &lt; wait_set-&gt;size_of_subscriptions; ++i) &#123;<br>    <span class="hljs-type">bool</span> is_ready = wait_set-&gt;impl-&gt;rmw_subscriptions.subscribers[i] != <span class="hljs-literal">NULL</span>;<br>    <span class="hljs-keyword">if</span> (!is_ready) &#123;<br>      wait_set-&gt;subscriptions[i] = <span class="hljs-literal">NULL</span>;<br>    &#125;<br>  &#125;<br>  <br>  <span class="hljs-comment">//....其他类似处理</span><br>  <br>  <span class="hljs-keyword">return</span> RCL_RET_OK;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>memory_strategy_-&gt;remove_null_handles(&amp;wait_set_);移除Handles元素过程如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/include/rclcpp/strategies/allocator_memory_strategy.hpp</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">remove_null_handles</span><span class="hljs-params">(<span class="hljs-type">rcl_wait_set_t</span> * wait_set)</span> <span class="hljs-keyword">override</span></span><br><span class="hljs-function">  </span>&#123;<br>     <span class="hljs-keyword">for</span> (<span class="hljs-type">size_t</span> i = <span class="hljs-number">0</span>; i &lt; subscription_handles_.<span class="hljs-built_in">size</span>(); ++i) &#123;<br>      <span class="hljs-keyword">if</span> (!wait_set-&gt;subscriptions[i]) &#123;<br>        subscription_handles_[i].<span class="hljs-built_in">reset</span>();<br>      &#125;<br>    &#125;<br>    <span class="hljs-comment">// ......</span><br><br>    subscription_handles_.<span class="hljs-built_in">erase</span>(<br>      std::<span class="hljs-built_in">remove</span>(subscription_handles_.<span class="hljs-built_in">begin</span>(), subscription_handles_.<span class="hljs-built_in">end</span>(), <span class="hljs-literal">nullptr</span>),<br>      subscription_handles_.<span class="hljs-built_in">end</span>()<br>    );<br><br>    <span class="hljs-comment">// ......</span><br>  &#125;<br></code></pre></td></tr></table></figure>
+
+<p>我们已经获取了所有的准备好的消息、定时器等，紧接着就是2)take阶段，从其中选择一个可调用对象，官网上流程图展示了这个过程<a target="_blank" rel="noopener" href="https://docs.ros.org/en/humble/Concepts/Intermediate/About-Executors.html">Executors — ROS 2 Documentation: Humble documentation</a>：</p>
+<p><img src="/img/assets/take%E7%9A%84%E6%B5%81%E7%A8%8B.png" srcset="/img/loading.gif" lazyload></p>
+<p>对应的具体代码如下，你可以在图和代码一一对应上。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executor.cpp</span><br><span class="hljs-function"><span class="hljs-type">bool</span> <span class="hljs-title">Executor::get_next_ready_executable</span><span class="hljs-params">(AnyExecutable &amp; any_executable)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-comment">// 直接转发到get_next_ready_executable_from_map</span><br>  <span class="hljs-type">bool</span> success = <span class="hljs-built_in">get_next_ready_executable_from_map</span>(any_executable, weak_groups_to_nodes_);<br>  <span class="hljs-keyword">return</span> success;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-type">bool</span> <span class="hljs-title">Executor::get_next_ready_executable_from_map</span><span class="hljs-params">(</span></span><br><span class="hljs-params"><span class="hljs-function">  AnyExecutable &amp; any_executable,</span></span><br><span class="hljs-params"><span class="hljs-function">  <span class="hljs-type">const</span> rclcpp::memory_strategy::MemoryStrategy::WeakCallbackGroupsToNodesMap &amp;</span></span><br><span class="hljs-params"><span class="hljs-function">  weak_groups_to_nodes)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-built_in">TRACEPOINT</span>(rclcpp_executor_get_next_ready);<br>  <span class="hljs-type">bool</span> success = <span class="hljs-literal">false</span>;<br>  std::lock_guard&lt;std::mutex&gt; guard&#123;mutex_&#125;;<br>  <span class="hljs-comment">// Check the timers to see if there are any that are ready</span><br>  memory_strategy_-&gt;<span class="hljs-built_in">get_next_timer</span>(any_executable, weak_groups_to_nodes);<br>  <span class="hljs-keyword">if</span> (any_executable.timer) &#123;<br>    success = <span class="hljs-literal">true</span>;<br>  &#125;<br>  <span class="hljs-keyword">if</span> (!success) &#123;<br>    <span class="hljs-comment">// Check the subscriptions to see if there are any that are ready</span><br>    memory_strategy_-&gt;<span class="hljs-built_in">get_next_subscription</span>(any_executable, weak_groups_to_nodes);<br>    <span class="hljs-keyword">if</span> (any_executable.subscription) &#123;<br>      success = <span class="hljs-literal">true</span>;<br>    &#125;<br>  &#125;<br>  <span class="hljs-keyword">if</span> (!success) &#123;<br>    <span class="hljs-comment">// Check the services to see if there are any that are ready</span><br>    memory_strategy_-&gt;<span class="hljs-built_in">get_next_service</span>(any_executable, weak_groups_to_nodes);<br>    <span class="hljs-keyword">if</span> (any_executable.service) &#123;<br>      success = <span class="hljs-literal">true</span>;<br>    &#125;<br>  &#125;<br>  <span class="hljs-keyword">if</span> (!success) &#123;<br>    <span class="hljs-comment">// Check the clients to see if there are any that are ready</span><br>    memory_strategy_-&gt;<span class="hljs-built_in">get_next_client</span>(any_executable, weak_groups_to_nodes);<br>    <span class="hljs-keyword">if</span> (any_executable.client) &#123;<br>      success = <span class="hljs-literal">true</span>;<br>    &#125;<br>  &#125;<br>  <span class="hljs-keyword">if</span> (!success) &#123;<br>    <span class="hljs-comment">// Check the waitables to see if there are any that are ready</span><br>    memory_strategy_-&gt;<span class="hljs-built_in">get_next_waitable</span>(any_executable, weak_groups_to_nodes);<br>    <span class="hljs-keyword">if</span> (any_executable.waitable) &#123;<br>      any_executable.data = any_executable.waitable-&gt;<span class="hljs-built_in">take_data</span>();<br>      success = <span class="hljs-literal">true</span>;<br>    &#125;<br>  &#125;<br>  <span class="hljs-comment">// At this point any_executable should be valid with either a valid subscription</span><br>  <span class="hljs-comment">// or a valid timer, or it should be a null shared_ptr</span><br>  <span class="hljs-keyword">if</span> (success) &#123;<br>    rclcpp::CallbackGroup::WeakPtr weak_group_ptr = any_executable.callback_group;<br>    <span class="hljs-keyword">auto</span> iter = weak_groups_to_nodes.<span class="hljs-built_in">find</span>(weak_group_ptr);<br>    <span class="hljs-keyword">if</span> (iter == weak_groups_to_nodes.<span class="hljs-built_in">end</span>()) &#123;<br>      success = <span class="hljs-literal">false</span>;<br>    &#125;<br>  &#125;<br><br>  <span class="hljs-keyword">if</span> (success) &#123;<br>    <span class="hljs-comment">// If it is valid, check to see if the group is mutually exclusive or</span><br>    <span class="hljs-comment">// not, then mark it accordingly ..Check if the callback_group belongs to this executor</span><br>    <span class="hljs-keyword">if</span> (any_executable.callback_group &amp;&amp; any_executable.callback_group-&gt;<span class="hljs-built_in">type</span>() == CallbackGroupType::MutuallyExclusive)<br>    &#123;<br>      <span class="hljs-comment">// It should not have been taken otherwise</span><br>      <span class="hljs-built_in">assert</span>(any_executable.callback_group-&gt;<span class="hljs-built_in">can_be_taken_from</span>().<span class="hljs-built_in">load</span>());<br>      <span class="hljs-comment">// Set to false to indicate something is being run from this group</span><br>      <span class="hljs-comment">// This is reset to true either when the any_executable is executed or when the</span><br>      <span class="hljs-comment">// any_executable is destructued</span><br>      any_executable.callback_group-&gt;<span class="hljs-built_in">can_be_taken_from</span>().<span class="hljs-built_in">store</span>(<span class="hljs-literal">false</span>);<br>    &#125;<br>  &#125;<br>  <span class="hljs-comment">// If there is no ready executable, return false</span><br>  <span class="hljs-keyword">return</span> success;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这里我想说明三点：</p>
+<ol>
+<li>显然这里的处理是有优先级的，优先定时器-&gt;订阅-&gt;服务-&gt;客户端-&gt;其他可调用对象，个人认为这种优先级可能在不当编程下造成部分请求回调的饥饿；</li>
+<li>这里get_next_xxxx函数，为了解决有效性的问题，这里采用循环和当前回调组内部的话题对比，个人认为在大量话题的系统下，会显著增加CPU负担；</li>
+<li>在take可调用对象的时候，也做了group-&gt;can_be_taken_from().load()判断，确定是否允许访问已经在执行回调组。<br>以下是take一个订阅的过程：</li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><code class="hljs C++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executor.cpp</span><br>  <span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">get_next_subscription</span><span class="hljs-params">(</span></span><br><span class="hljs-params"><span class="hljs-function">    rclcpp::AnyExecutable &amp; any_exec,</span></span><br><span class="hljs-params"><span class="hljs-function">    <span class="hljs-type">const</span> WeakCallbackGroupsToNodesMap &amp; weak_groups_to_nodes)</span> <span class="hljs-keyword">override</span></span><br><span class="hljs-function">  </span>&#123;<br>    <span class="hljs-keyword">auto</span> it = subscription_handles_.<span class="hljs-built_in">begin</span>();<br>    <span class="hljs-keyword">while</span> (it != subscription_handles_.<span class="hljs-built_in">end</span>()) &#123;<br>      <span class="hljs-keyword">auto</span> subscription = <span class="hljs-built_in">get_subscription_by_handle</span>(*it, weak_groups_to_nodes);<br>      <span class="hljs-keyword">if</span> (subscription) &#123;<br>        <span class="hljs-comment">// Find the group for this handle and see if it can be serviced</span><br>        <span class="hljs-keyword">auto</span> group = <span class="hljs-built_in">get_group_by_subscription</span>(subscription, weak_groups_to_nodes);<br>        <span class="hljs-keyword">if</span> (!group) &#123;<br>          <span class="hljs-comment">// Group was not found, meaning the subscription is not valid...</span><br>          <span class="hljs-comment">// Remove it from the ready list and continue looking</span><br>          it = subscription_handles_.<span class="hljs-built_in">erase</span>(it);<br>          <span class="hljs-keyword">continue</span>;<br>        &#125;<br>        <span class="hljs-comment">// ！！这里很重要，回调组的属性由这里体现</span><br>        <span class="hljs-keyword">if</span> (!group-&gt;<span class="hljs-built_in">can_be_taken_from</span>().<span class="hljs-built_in">load</span>()) &#123;<br>          <span class="hljs-comment">// Group is mutually exclusive and is being used, so skip it for now</span><br>          <span class="hljs-comment">// Leave it to be checked next time, but continue searching</span><br>          ++it;<br>          <span class="hljs-keyword">continue</span>;<br>        &#125;<br>        <span class="hljs-comment">// Otherwise it is safe to set and return the any_exec</span><br>        any_exec.subscription = subscription;<br>        any_exec.callback_group = group;<br>        any_exec.node_base = <span class="hljs-built_in">get_node_by_group</span>(group, weak_groups_to_nodes);<br>        subscription_handles_.<span class="hljs-built_in">erase</span>(it);<br>        <span class="hljs-keyword">return</span>;<br>      &#125;<br>      <span class="hljs-comment">// Else, the subscription is no longer valid, remove it and continue</span><br>      it = subscription_handles_.<span class="hljs-built_in">erase</span>(it);<br>    &#125;<br>  &#125;<br></code></pre></td></tr></table></figure>
+
+<p>当我们拿到可调用的对象，剩下的就是执行可调用对象了。我们以execute_subscription()为例，如果有消息到来，则execute_subscription()会处理好序列化，并直接调用已经存储好的callback函数，细节不在这里赘述。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executor.cpp</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">Executor::execute_any_executable</span><span class="hljs-params">(AnyExecutable &amp; any_exec)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-keyword">if</span> (!spinning.<span class="hljs-built_in">load</span>()) &#123;<br>    <span class="hljs-keyword">return</span>;<br>  &#125;<br>  <span class="hljs-keyword">if</span> (any_exec.timer) &#123;<br>    <span class="hljs-built_in">TRACEPOINT</span>(<br>      rclcpp_executor_execute,<br>      <span class="hljs-built_in">static_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">void</span> *&gt;(any_exec.timer-&gt;<span class="hljs-built_in">get_timer_handle</span>().<span class="hljs-built_in">get</span>()));<br>    <span class="hljs-built_in">execute_timer</span>(any_exec.timer);<br>  &#125;<br>  <span class="hljs-keyword">if</span> (any_exec.subscription) &#123;<br>    <span class="hljs-built_in">TRACEPOINT</span>(<br>      rclcpp_executor_execute,<br>      <span class="hljs-built_in">static_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">void</span> *&gt;(any_exec.subscription-&gt;<span class="hljs-built_in">get_subscription_handle</span>().<span class="hljs-built_in">get</span>()));<br>    <span class="hljs-built_in">execute_subscription</span>(any_exec.subscription);<br>  &#125;<br>  <span class="hljs-keyword">if</span> (any_exec.service) &#123;<br>    <span class="hljs-built_in">execute_service</span>(any_exec.service);<br>  &#125;<br>  <span class="hljs-keyword">if</span> (any_exec.client) &#123;<br>    <span class="hljs-built_in">execute_client</span>(any_exec.client);<br>  &#125;<br>  <span class="hljs-keyword">if</span> (any_exec.waitable) &#123;<br>    any_exec.waitable-&gt;<span class="hljs-built_in">execute</span>(any_exec.data);<br>  &#125;<br><br>  <span class="hljs-comment">// !!! 这里很重要</span><br>  any_exec.callback_group-&gt;<span class="hljs-built_in">can_be_taken_from</span>().<span class="hljs-built_in">store</span>(<span class="hljs-literal">true</span>);<br>  <span class="hljs-comment">// Wake the wait, because it may need to be recalculated or work that</span><br>  <span class="hljs-comment">// was previously blocked is now available.</span><br>  <span class="hljs-keyword">try</span> &#123;<br>    interrupt_guard_condition_.<span class="hljs-built_in">trigger</span>();<br>  &#125; <span class="hljs-built_in">catch</span> (<span class="hljs-type">const</span> rclcpp::exceptions::RCLError &amp; ex) &#123;<br>    <span class="hljs-keyword">throw</span> std::<span class="hljs-built_in">runtime_error</span>(<br>            std::<span class="hljs-built_in">string</span>(<br>              <span class="hljs-string">&quot;Failed to trigger guard condition from execute_any_executable: &quot;</span>) + ex.<span class="hljs-built_in">what</span>());<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>到这里问题4基本明白。问题3和问题5还没有被理清楚，因为代码跨度太大，为了弄清楚调度逻辑，我们需要跟踪can_be_taken_from()，才能说明并发的流程。为了方便说明，暂时把其他不重要的代码省略掉。仍然从run开始：</p>
+<ul>
+<li>整个调用流程是互斥的执行get_next_executable()；</li>
+<li>并发的执行execute_any_executable()。</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executors/multi_threaded_executor.cpp</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">MultiThreadedExecutor::run</span><span class="hljs-params">(<span class="hljs-type">size_t</span> this_thread_number)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-keyword">while</span> (rclcpp::<span class="hljs-built_in">ok</span>(<span class="hljs-keyword">this</span>-&gt;context_) &amp;&amp; spinning.<span class="hljs-built_in">load</span>()) &#123;<br>    rclcpp::AnyExecutable any_exec;<br>    &#123;<br>      std::lock_guard wait_lock&#123;wait_mutex_&#125;;<br>      <span class="hljs-keyword">if</span> (!<span class="hljs-built_in">get_next_executable</span>(any_exec, next_exec_timeout_)) &#123;<br>        <span class="hljs-keyword">continue</span>;<br>      &#125;<br>    &#125;<br>    <br>    <span class="hljs-built_in">execute_any_executable</span>(any_exec);<br>    any_exec.callback_group.<span class="hljs-built_in">reset</span>();<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>get_next_executable()是互斥执行的，当满足两个条件，那么can_be_taken_from_会设置为false，表示不允许再执行该回调组里的回调：</p>
+<ul>
+<li>成功take了一个可调用对象；</li>
+<li>可调用对象所属的回调组类型为CallbackGroupType::MutuallyExclusive。</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executor.cpp</span><br><span class="hljs-function"><span class="hljs-type">bool</span> <span class="hljs-title">Executor::get_next_executable</span><span class="hljs-params">(AnyExecutable &amp; any_executable, std::chrono::nanoseconds timeout)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-type">bool</span> success = <span class="hljs-built_in">get_next_ready_executable</span>(any_executable);<br>  <span class="hljs-keyword">if</span> (!success) &#123;<br>    <span class="hljs-built_in">wait_for_work</span>(timeout);<br>    success = <span class="hljs-built_in">get_next_ready_executable</span>(any_executable);<br>  &#125;<br>  <br>  <span class="hljs-keyword">return</span> success;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-type">bool</span> <span class="hljs-title">Executor::get_next_ready_executable</span><span class="hljs-params">(AnyExecutable &amp; any_executable)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-type">bool</span> success = <span class="hljs-built_in">get_next_ready_executable_from_map</span>(any_executable, weak_groups_to_nodes_);<br>  <span class="hljs-keyword">return</span> success;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-type">bool</span> <span class="hljs-title">Executor::get_next_ready_executable_from_map</span><span class="hljs-params">(</span></span><br><span class="hljs-params"><span class="hljs-function">  AnyExecutable &amp; any_executable,</span></span><br><span class="hljs-params"><span class="hljs-function">  <span class="hljs-type">const</span> rclcpp::memory_strategy::MemoryStrategy::WeakCallbackGroupsToNodesMap &amp;weak_groups_to_nodes)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-built_in">TRACEPOINT</span>(rclcpp_executor_get_next_ready);<br>  <span class="hljs-type">bool</span> success = <span class="hljs-literal">false</span>;<br>  std::lock_guard&lt;std::mutex&gt; guard&#123;mutex_&#125;;<br><br>  <span class="hljs-comment">//.......</span><br><br>  <span class="hljs-keyword">if</span> (success) &#123;<br>    <span class="hljs-keyword">if</span> (any_executable.callback_group &amp;&amp; any_executable.callback_group-&gt;<span class="hljs-built_in">type</span>() \<br>        == CallbackGroupType::MutuallyExclusive)<br>    &#123;<br>      <span class="hljs-built_in">assert</span>(any_executable.callback_group-&gt;<span class="hljs-built_in">can_be_taken_from</span>().<span class="hljs-built_in">load</span>());<br>      any_executable.callback_group-&gt;<span class="hljs-built_in">can_be_taken_from</span>().<span class="hljs-built_in">store</span>(<span class="hljs-literal">false</span>);<br>    &#125;<br>  &#125;<br><br>  <span class="hljs-keyword">return</span> success;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<p>并发的执行execute_any_executable()的最后，会将可调用对象所在回调组的can_be_taken_from_设置为true，表示该回调组的回调已经执行完毕，可以再次执行该回调了。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">Executor::execute_any_executable</span><span class="hljs-params">(AnyExecutable &amp; any_exec)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-keyword">if</span> (any_exec.subscription) &#123;<br>    <span class="hljs-built_in">execute_subscription</span>(any_exec.subscription);<br>  &#125;<br>  <br>  any_exec.callback_group-&gt;<span class="hljs-built_in">can_be_taken_from</span>().<span class="hljs-built_in">store</span>(<span class="hljs-literal">true</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>根据can_be_taken_from_的值，确定回调是否能被执行的代码如下，程序在收集对象Handles、take的时候都有判断：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function"><span class="hljs-type">bool</span> <span class="hljs-title">collect_entities</span><span class="hljs-params">(<span class="hljs-type">const</span> WeakCallbackGroupsToNodesMap &amp; weak_groups_to_nodes)</span> <span class="hljs-keyword">override</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-comment">//......</span><br>    <span class="hljs-keyword">if</span> (!group || !group-&gt;<span class="hljs-built_in">can_be_taken_from</span>().<span class="hljs-built_in">load</span>()) &#123;<br>      <span class="hljs-keyword">continue</span>;<br>    &#125;<br>  <span class="hljs-comment">//......</span><br>  <span class="hljs-keyword">return</span> has_invalid_weak_groups_or_nodes;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">get_next_subscription</span><span class="hljs-params">(</span></span><br><span class="hljs-params"><span class="hljs-function">  rclcpp::AnyExecutable &amp; any_exec,</span></span><br><span class="hljs-params"><span class="hljs-function">  <span class="hljs-type">const</span> WeakCallbackGroupsToNodesMap &amp; weak_groups_to_nodes)</span> <span class="hljs-keyword">override</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-keyword">auto</span> it = subscription_handles_.<span class="hljs-built_in">begin</span>();<br>  <span class="hljs-keyword">while</span> (it != subscription_handles_.<span class="hljs-built_in">end</span>()) &#123;<br>    <span class="hljs-keyword">auto</span> subscription = <span class="hljs-built_in">get_subscription_by_handle</span>(*it, weak_groups_to_nodes);<br>    <span class="hljs-keyword">if</span> (subscription) &#123;<br>      <span class="hljs-keyword">auto</span> group = <span class="hljs-built_in">get_group_by_subscription</span>(subscription, weak_groups_to_nodes);<br>      <span class="hljs-keyword">if</span> (!group-&gt;<span class="hljs-built_in">can_be_taken_from</span>().<span class="hljs-built_in">load</span>()) &#123;<br>        ++it;<br>        <span class="hljs-keyword">continue</span>;<br>      &#125;<br><br>      any_exec.subscription = subscription;<br>      any_exec.callback_group = group;<br>      any_exec.node_base = <span class="hljs-built_in">get_node_by_group</span>(group, weak_groups_to_nodes);<br>      subscription_handles_.<span class="hljs-built_in">erase</span>(it);<br>      <span class="hljs-keyword">return</span>;<br>    &#125;<br><br>    it = subscription_handles_.<span class="hljs-built_in">erase</span>(it);<br>  &#125;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<p>如果回调组类型为CallbackGroupType::Reentrant，那么就不会将can_be_taken_from_设置为false，回调组可以被持续调用。也就是说，如果有消息持续到来，并且有足够多线程，即使是同一个节点、同一个回调组的同一个函数，可能被多线程并行调用，这就要求在编程中，注意函数要支持可重入。（实验方法很简单，只需要改大QoS，假设发送端按照5Hz发送，订阅回调只需要sleep(1s)，那么就会造成消息处理不过来，其他线程就会进入同一个订阅回调，处理消息）。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/ROS2/" class="category-chain-item">ROS2</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/ROS2/" class="print-no-link">#ROS2</a>
+      
+        <a href="/tags/Humble/" class="print-no-link">#Humble</a>
+      
+        <a href="/tags/Executor/" class="print-no-link">#Executor</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>ROS2 Executor详解</div>
+      <div>https://ziqingdream.github.io/2025/04/13/ROS2 Executor详解/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>ZiQingDream</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年4月13日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="valine"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#valine', function() {
+      Fluid.utils.createScript('https://lib.baomitu.com/valine/1.5.1/Valine.min.js', function() {
+        var options = Object.assign(
+          {"appId":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","appKey":"fUOlkXhD9wcmxOTed9NdlqPH","path":"window.location.pathname","placeholder":"留言仅限讨论，禁止广告等行为","avatar":"robohash","meta":["nick","mail","link"],"requiredFields":[],"pageSize":10,"lang":"zh-CN","highlight":true,"recordIP":true,"serverURLs":"https://lyt8mpsi.lc-cn-n1-shared.com","emojiCDN":null,"emojiMaps":null,"enableQQ":false,"appid":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","appkey":"fUOlkXhD9wcmxOTed9NdlqPH"},
+          {
+            el: "#valine",
+            path: window.location.pathname
+          }
+        )
+        new Valine(options);
+        Fluid.utils.waitElementVisible('#valine .vcontent', () => {
+          var imgSelector = '#valine .vcontent img:not(.vemoji)';
+          Fluid.plugins.imageCaption(imgSelector);
+          Fluid.plugins.fancyBox(imgSelector);
+        })
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+    <div class="statistics">
+  
+  
+
+  
+    
+      <span id="leancloud-site-pv-container" style="display: none">
+        总访问量 
+        <span id="leancloud-site-pv"></span>
+         次
+      </span>
+    
+    
+      <span id="leancloud-site-uv-container" style="display: none">
+        总访客数 
+        <span id="leancloud-site-uv"></span>
+         人
+      </span>
+    
+    
+
+  
+
+</div>
+
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script defer src="/js/leancloud.js" ></script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
