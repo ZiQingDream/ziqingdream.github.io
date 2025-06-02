@@ -1,0 +1,793 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/introduce/avatar.jpg">
+  <link rel="icon" href="/img/introduce/avatar.jpg">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="工程课代表[B站] / ZiQingDream[Github]">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="通过宇树开源的强化学习代码，了解RL训练逻辑">
+<meta property="og:type" content="article">
+<meta property="og:title" content="宇树RL代码分析">
+<meta property="og:url" content="https://ziqingdream.github.io/2025/03/10/-1-%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%8A%80%E6%9C%AF%E6%A0%88/-2-%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0/%E3%80%900%E3%80%91%E5%AE%87%E6%A0%91RL%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="工程课代表 Blog">
+<meta property="og:description" content="通过宇树开源的强化学习代码，了解RL训练逻辑">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ziqingdream.github.io/img/unitree-rl/title.png">
+<meta property="article:published_time" content="2025-03-09T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-06-02T14:54:28.385Z">
+<meta property="article:author" content="工程课代表">
+<meta property="article:tag" content="Unitree-RL">
+<meta property="article:tag" content="Locomotion">
+<meta property="article:tag" content="PPO">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ziqingdream.github.io/img/unitree-rl/title.png">
+  
+  
+  
+  <title>宇树RL代码分析 - 工程课代表 Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"ziqingdream.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","app_key":"fUOlkXhD9wcmxOTed9NdlqPH","server_url":"https://lyt8mpsi.lc-cn-n1-shared.com","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>工程课代表 Blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('https://fluid.s3.bitiful.net/bg/dojm2h.png?w=1920&q=100&fmt=webp') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="宇树RL代码分析"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-03-10 00:00" pubdate>
+          2025年3月10日 凌晨
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.7k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          31 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">宇树RL代码分析</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="项目说明"><a href="#项目说明" class="headerlink" title="项目说明"></a>项目说明</h1><p>整个项目目录结构如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment">#unitree_rl_gym</span><br><span class="hljs-comment">#----isaacgym         # NV Isaac Gym，老版本，已经被Isaac Lab取代</span><br><span class="hljs-comment">#----rsl_rl           # 基于GPU的强化学习库</span><br><span class="hljs-comment">#----unitree_rl_gym   # 宇树强化学习环境</span><br><span class="hljs-comment">#--------deploy</span><br><span class="hljs-comment">#--------doc</span><br><span class="hljs-comment">#----legged_gym       # 宇树强化学习包</span><br><span class="hljs-comment">#--------envs         # 强化学习环境定义：g1</span><br><span class="hljs-comment">#--------scripts      # 训练及推理脚本</span><br><span class="hljs-comment">#--------utils        # 其他辅助包</span><br><span class="hljs-comment">#----resources</span><br><span class="hljs-comment">#----setup.py</span><br></code></pre></td></tr></table></figure>
+
+<h1 id="训练分析"><a href="#训练分析" class="headerlink" title="训练分析"></a>训练分析</h1><p>启动训练命令为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># `--task`: 必选参数，值可选(go2, g1, h1, h1_2)</span><br><span class="hljs-comment"># `--headless`: 默认启动图形界面，设为 true 时不渲染图形界面（效率更高）</span><br><span class="hljs-comment"># `--resume`: 从日志中选择 checkpoint 继续训练</span><br><span class="hljs-comment"># `--experiment_name`: 运行/加载的 experiment 名称</span><br><span class="hljs-comment"># `--run_name`: 运行/加载的 run 名称</span><br><span class="hljs-comment"># `--load_run`: 加载运行的名称，默认加载最后一次运行</span><br><span class="hljs-comment"># `--checkpoint`: checkpoint 编号，默认加载最新一次文件</span><br><span class="hljs-comment"># `--num_envs`: 并行训练的环境个数</span><br><span class="hljs-comment"># `--seed`: 随机种子</span><br><span class="hljs-comment"># `--max_iterations`: 训练的最大迭代次数</span><br><span class="hljs-comment"># `--sim_device`: 仿真计算设备，指定 CPU 为 `--sim_device=cpu`</span><br><span class="hljs-comment"># `--rl_device`: 强化学习计算设备，指定 CPU 为 `--rl_device=cpu`</span><br>python legged_gym/scripts/play.py --task=g1<br></code></pre></td></tr></table></figure>
+
+<p>此时传递的参数会被get_args()解析，并传递下去：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">import</span> os<br><span class="hljs-keyword">import</span> numpy <span class="hljs-keyword">as</span> np<br><span class="hljs-keyword">from</span> datetime <span class="hljs-keyword">import</span> datetime<br><span class="hljs-keyword">import</span> sys<br><br><span class="hljs-keyword">import</span> isaacgym<br><span class="hljs-keyword">from</span> legged_gym.envs <span class="hljs-keyword">import</span> *<br><span class="hljs-keyword">from</span> legged_gym.utils <span class="hljs-keyword">import</span> get_args, task_registry<br><span class="hljs-keyword">import</span> torch<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">train</span>(<span class="hljs-params">args</span>):<br>    <span class="hljs-comment"># 构建强化学习环境</span><br>    env, env_cfg = task_registry.make_env(name=args.task, args=args)<br><br>    <span class="hljs-comment"># 构建强化学习算法</span><br>    ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args)<br><br>    <span class="hljs-comment"># 调用算法learn</span><br>    ppo_runner.learn(num_learning_iterations=train_cfg.runner.max_iterations, init_at_random_ep_len=<span class="hljs-literal">True</span>)<br><br><span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&#x27;__main__&#x27;</span>:<br>    args = get_args()<br>    train(args)<br></code></pre></td></tr></table></figure>
+
+<p>我们的任务如”g1”，是在legged_gym包初始化脚本中注册的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">from</span> legged_gym <span class="hljs-keyword">import</span> LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR<br><br><span class="hljs-keyword">from</span> legged_gym.envs.go2.go2_config <span class="hljs-keyword">import</span> GO2RoughCfg, GO2RoughCfgPPO<br><span class="hljs-keyword">from</span> legged_gym.envs.h1.h1_config <span class="hljs-keyword">import</span> H1RoughCfg, H1RoughCfgPPO<br><span class="hljs-keyword">from</span> legged_gym.envs.h1.h1_env <span class="hljs-keyword">import</span> H1Robot<br><span class="hljs-keyword">from</span> legged_gym.envs.h1_2.h1_2_config <span class="hljs-keyword">import</span> H1_2RoughCfg, H1_2RoughCfgPPO<br><span class="hljs-keyword">from</span> legged_gym.envs.h1_2.h1_2_env <span class="hljs-keyword">import</span> H1_2Robot<br><span class="hljs-keyword">from</span> legged_gym.envs.g1.g1_config <span class="hljs-keyword">import</span> G1RoughCfg, G1RoughCfgPPO<br><span class="hljs-keyword">from</span> legged_gym.envs.g1.g1_env <span class="hljs-keyword">import</span> G1Robot<br><span class="hljs-keyword">from</span> .base.legged_robot <span class="hljs-keyword">import</span> LeggedRobot<br><br><span class="hljs-keyword">from</span> legged_gym.utils.task_registry <span class="hljs-keyword">import</span> task_registry<br><br>task_registry.register( <span class="hljs-string">&quot;go2&quot;</span>, LeggedRobot, GO2RoughCfg(), GO2RoughCfgPPO())<br>task_registry.register( <span class="hljs-string">&quot;h1&quot;</span>, H1Robot, H1RoughCfg(), H1RoughCfgPPO())<br>task_registry.register( <span class="hljs-string">&quot;h1_2&quot;</span>, H1_2Robot, H1_2RoughCfg(), H1_2RoughCfgPPO())<br><br><span class="hljs-comment"># 我们关注class G1Robot(LeggedRobot): unitree_rl_gym/legged_gym/envs/g1/g1_env.py</span><br><span class="hljs-comment"># 机器人关节配置class G1RoughCfg( LeggedRobotCfg ): unitree_rl_gym/legged_gym/envs/g1/g1_config.py</span><br><span class="hljs-comment"># 训练算法为class G1RoughCfgPPO( LeggedRobotCfgPPO ): unitree_rl_gym/legged_gym/envs/g1/g1_config.py</span><br>task_registry.register( <span class="hljs-string">&quot;g1&quot;</span>, G1Robot, G1RoughCfg(), G1RoughCfgPPO())<br></code></pre></td></tr></table></figure>
+
+<p>这里的注册函数，调用了任务注册模块，同时env创建、算法创建也在该模块中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># unitree_rl_gym/legged_gym/utils/task_registry.py</span><br><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">TaskRegistry</span>():<br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self</span>):<br>        <span class="hljs-variable language_">self</span>.task_classes = &#123;&#125;<br>        <span class="hljs-variable language_">self</span>.env_cfgs = &#123;&#125;<br>        <span class="hljs-variable language_">self</span>.train_cfgs = &#123;&#125;<br><br>    <span class="hljs-comment"># 这里注册任务：传入任务名、任务类型、环境配置、PPO配置</span><br>    <span class="hljs-comment"># task_registry.register( &quot;g1&quot;, G1Robot, G1RoughCfg(), G1RoughCfgPPO())</span><br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">register</span>(<span class="hljs-params">self, name: <span class="hljs-built_in">str</span>, task_class: VecEnv, env_cfg: LeggedRobotCfg, train_cfg: LeggedRobotCfgPPO</span>):<br>        <span class="hljs-variable language_">self</span>.task_classes[name] = task_class<br>        <span class="hljs-variable language_">self</span>.env_cfgs[name] = env_cfg<br>        <span class="hljs-variable language_">self</span>.train_cfgs[name] = train_cfg<br></code></pre></td></tr></table></figure>
+
+<p>在make_env()和make_alg_runner()分别创建训练环境，并且构建算法执行器：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># unitree_rl_gym/legged_gym/utils/task_registry.py</span><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">TaskRegistry</span>():<br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">get_task_class</span>(<span class="hljs-params">self, name: <span class="hljs-built_in">str</span></span>) -&gt; VecEnv:<br>        <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>.task_classes[name]<br>    <br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">get_cfgs</span>(<span class="hljs-params">self, name</span>) -&gt; <span class="hljs-type">Tuple</span>[LeggedRobotCfg, LeggedRobotCfgPPO]:<br>        train_cfg = <span class="hljs-variable language_">self</span>.train_cfgs[name]<br>        env_cfg = <span class="hljs-variable language_">self</span>.env_cfgs[name]<br>        <span class="hljs-comment"># copy seed</span><br>        env_cfg.seed = train_cfg.seed<br>        <span class="hljs-keyword">return</span> env_cfg, train_cfg<br>    <br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">make_env</span>(<span class="hljs-params">self, name, args=<span class="hljs-literal">None</span>, env_cfg=<span class="hljs-literal">None</span></span>) -&gt; <span class="hljs-type">Tuple</span>[VecEnv, LeggedRobotCfg]:<br>        <span class="hljs-comment"># if no args passed get command line arguments</span><br>        <span class="hljs-keyword">if</span> args <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:<br>            args = get_args()<br>        <span class="hljs-comment"># check if there is a registered env with that name</span><br>        <span class="hljs-keyword">if</span> name <span class="hljs-keyword">in</span> <span class="hljs-variable language_">self</span>.task_classes:<br>            task_class = <span class="hljs-variable language_">self</span>.get_task_class(name)<br>        <span class="hljs-keyword">else</span>:<br>            <span class="hljs-keyword">raise</span> ValueError(<span class="hljs-string">f&quot;Task with name: <span class="hljs-subst">&#123;name&#125;</span> was not registered&quot;</span>)<br>        <span class="hljs-keyword">if</span> env_cfg <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:<br>            <span class="hljs-comment"># load config files</span><br>            env_cfg, _ = <span class="hljs-variable language_">self</span>.get_cfgs(name)<br>        <span class="hljs-comment"># override cfg from args (if specified)</span><br>        env_cfg, _ = update_cfg_from_args(env_cfg, <span class="hljs-literal">None</span>, args)<br>        set_seed(env_cfg.seed)<br>        <span class="hljs-comment"># parse sim params (convert to dict first)</span><br>        sim_params = &#123;<span class="hljs-string">&quot;sim&quot;</span>: class_to_dict(env_cfg.sim)&#125;<br>        sim_params = parse_sim_params(args, sim_params)<br>        <span class="hljs-comment"># 这里相当于创建了G1Robot</span><br>        env = task_class(   cfg=env_cfg,<br>                            sim_params=sim_params,<br>                            physics_engine=args.physics_engine,<br>                            sim_device=args.sim_device,<br>                            headless=args.headless)<br>        <span class="hljs-keyword">return</span> env, env_cfg<br><br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">make_alg_runner</span>(<span class="hljs-params">self, env, name=<span class="hljs-literal">None</span>, args=<span class="hljs-literal">None</span>, train_cfg=<span class="hljs-literal">None</span>, log_root=<span class="hljs-string">&quot;default&quot;</span></span>) -&gt; <span class="hljs-type">Tuple</span>[OnPolicyRunner, LeggedRobotCfgPPO]:<br>        <span class="hljs-comment"># if no args passed get command line arguments</span><br>        <span class="hljs-keyword">if</span> args <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:<br>            args = get_args()<br>        <span class="hljs-comment"># if config files are passed use them, otherwise load from the name</span><br>        <span class="hljs-keyword">if</span> train_cfg <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:<br>            <span class="hljs-keyword">if</span> name <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:<br>                <span class="hljs-keyword">raise</span> ValueError(<span class="hljs-string">&quot;Either &#x27;name&#x27; or &#x27;train_cfg&#x27; must be not None&quot;</span>)<br>            <span class="hljs-comment"># load config files</span><br>            _, train_cfg = <span class="hljs-variable language_">self</span>.get_cfgs(name)<br>        <span class="hljs-keyword">else</span>:<br>            <span class="hljs-keyword">if</span> name <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:<br>                <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;&#x27;train_cfg&#x27; provided -&gt; Ignoring &#x27;name=<span class="hljs-subst">&#123;name&#125;</span>&#x27;&quot;</span>)<br>        <span class="hljs-comment"># override cfg from args (if specified)</span><br>        _, train_cfg = update_cfg_from_args(<span class="hljs-literal">None</span>, train_cfg, args)<br><br>        <span class="hljs-keyword">if</span> log_root==<span class="hljs-string">&quot;default&quot;</span>:<br>            log_root = os.path.join(LEGGED_GYM_ROOT_DIR, <span class="hljs-string">&#x27;logs&#x27;</span>, train_cfg.runner.experiment_name)<br>            log_dir = os.path.join(log_root, datetime.now().strftime(<span class="hljs-string">&#x27;%b%d_%H-%M-%S&#x27;</span>) + <span class="hljs-string">&#x27;_&#x27;</span> + train_cfg.runner.run_name)<br>        <span class="hljs-keyword">elif</span> log_root <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:<br>            log_dir = <span class="hljs-literal">None</span><br>        <span class="hljs-keyword">else</span>:<br>            log_dir = os.path.join(log_root, datetime.now().strftime(<span class="hljs-string">&#x27;%b%d_%H-%M-%S&#x27;</span>) + <span class="hljs-string">&#x27;_&#x27;</span> + train_cfg.runner.run_name)<br><br>        <span class="hljs-comment"># 这里相当于创建了OnPolicyRunner，配置为G1RoughCfgPPO</span><br>        train_cfg_dict = class_to_dict(train_cfg)<br>        runner = OnPolicyRunner(env, train_cfg_dict, log_dir, device=args.rl_device)<br>        <span class="hljs-comment">#save resume path before creating a new log_dir</span><br>        resume = train_cfg.runner.resume<br>        <span class="hljs-keyword">if</span> resume:<br>            <span class="hljs-comment"># load previously trained model</span><br>            resume_path = get_load_path(log_root, load_run=train_cfg.runner.load_run, checkpoint=train_cfg.runner.checkpoint)<br>            <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Loading model from: <span class="hljs-subst">&#123;resume_path&#125;</span>&quot;</span>)<br>            runner.load(resume_path)<br>        <span class="hljs-keyword">return</span> runner, train_cfg<br><br><span class="hljs-comment"># make global task registry</span><br>task_registry = TaskRegistry()<br><br></code></pre></td></tr></table></figure>
+
+<p>这样我们关注重点就来到了以下几个类：</p>
+<ul>
+<li>VecEnv：我们向量化并行环境</li>
+<li>OnPolicyRunner：在线强化学习算法类</li>
+<li>LeggedRobotCfg：强化学习环境配置</li>
+<li>LeggedRobotCfgPPO：PPO配置</li>
+</ul>
+<h1 id="强化学习环境"><a href="#强化学习环境" class="headerlink" title="强化学习环境"></a>强化学习环境</h1><p>rsl-rl的VecEnv是并行化环境的抽象接口：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">VecEnv</span>(<span class="hljs-title class_ inherited__">ABC</span>):<br>    num_envs: <span class="hljs-built_in">int</span><br>    num_obs: <span class="hljs-built_in">int</span><br>    num_privileged_obs: <span class="hljs-built_in">int</span><br>    num_actions: <span class="hljs-built_in">int</span><br>    max_episode_length: <span class="hljs-built_in">int</span><br>    privileged_obs_buf: torch.Tensor<br>    obs_buf: torch.Tensor <br>    rew_buf: torch.Tensor<br>    reset_buf: torch.Tensor<br>    episode_length_buf: torch.Tensor <span class="hljs-comment"># current episode duration</span><br>    extras: <span class="hljs-built_in">dict</span><br>    device: torch.device<br><span class="hljs-meta">    @abstractmethod</span><br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">step</span>(<span class="hljs-params">self, actions: torch.Tensor</span>) -&gt; <span class="hljs-type">Tuple</span>[torch.Tensor, <span class="hljs-type">Union</span>[torch.Tensor, <span class="hljs-literal">None</span>], torch.Tensor, torch.Tensor, <span class="hljs-built_in">dict</span>]:<br>        <span class="hljs-keyword">pass</span><br><span class="hljs-meta">    @abstractmethod</span><br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">reset</span>(<span class="hljs-params">self, env_ids: <span class="hljs-type">Union</span>[<span class="hljs-built_in">list</span>, torch.Tensor]</span>):<br>        <span class="hljs-keyword">pass</span><br><span class="hljs-meta">    @abstractmethod</span><br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">get_observations</span>(<span class="hljs-params">self</span>) -&gt; torch.Tensor:<br>        <span class="hljs-keyword">pass</span><br><span class="hljs-meta">    @abstractmethod</span><br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">get_privileged_observations</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-type">Union</span>[torch.Tensor, <span class="hljs-literal">None</span>]:<br>        <span class="hljs-keyword">pass</span><br></code></pre></td></tr></table></figure>
+
+<p>我们的机器人任务，就是一个VecEnv（根据python鸭子类型）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">G1Robot</span>(<span class="hljs-title class_ inherited__">LeggedRobot</span>):<br><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">LeggedRobot</span>(<span class="hljs-title class_ inherited__">BaseTask</span>):<br><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">BaseTask</span>(): 该类实现了VecEnv部分接口<br></code></pre></td></tr></table></figure>
+
+<p>TaskRegistry的make_env会创建G1Robot对象，其中G1Robot是一种VecEnv对象：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs python">env, env_cfg = task_registry.make_env(name=args.task, args=args)<br></code></pre></td></tr></table></figure>
+
+<p>G1Robot没有定义自己构造函数，转接到LeggedRobot和BaseTask初始化训练环境：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">LeggedRobot</span>(<span class="hljs-title class_ inherited__">BaseTask</span>):<br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self, cfg: LeggedRobotCfg, sim_params, physics_engine, sim_device, headless</span>):<br>        <span class="hljs-comment"># 1. 配置解析</span><br>        <span class="hljs-variable language_">self</span>.cfg = cfg<br>        <span class="hljs-variable language_">self</span>.sim_params = sim_params<br>        <span class="hljs-variable language_">self</span>.height_samples = <span class="hljs-literal">None</span><br>        <span class="hljs-variable language_">self</span>.debug_viz = <span class="hljs-literal">False</span><br>        <span class="hljs-variable language_">self</span>.init_done = <span class="hljs-literal">False</span><br>        <span class="hljs-variable language_">self</span>._parse_cfg(<span class="hljs-variable language_">self</span>.cfg)<br><br>        <span class="hljs-comment"># 调用BaseTask.__init__，初始化仿真环境</span><br>        <span class="hljs-built_in">super</span>().__init__(<span class="hljs-variable language_">self</span>.cfg, sim_params, physics_engine, sim_device, headless)<br><br>        <span class="hljs-comment"># 如果需要渲染，这里设置观测</span><br>        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> <span class="hljs-variable language_">self</span>.headless:<br>            <span class="hljs-variable language_">self</span>.set_camera(<span class="hljs-variable language_">self</span>.cfg.viewer.pos, <span class="hljs-variable language_">self</span>.cfg.viewer.lookat)<br>        <span class="hljs-comment"># 初始化状态等缓存</span><br>        <span class="hljs-variable language_">self</span>._init_buffers()<br>        <span class="hljs-variable language_">self</span>._prepare_reward_function()<br>        <span class="hljs-variable language_">self</span>.init_done = <span class="hljs-literal">True</span><br><br><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">BaseTask</span>():<br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self, cfg, sim_params, physics_engine, sim_device, headless</span>):<br>        <span class="hljs-comment"># isaac gym获取一个交互环境</span><br>        <span class="hljs-variable language_">self</span>.gym = gymapi.acquire_gym()<br><br>        <span class="hljs-variable language_">self</span>.sim_params = sim_params<br>        <span class="hljs-variable language_">self</span>.physics_engine = physics_engine<br>        <span class="hljs-variable language_">self</span>.sim_device = sim_device<br>        sim_device_type, <span class="hljs-variable language_">self</span>.sim_device_id = gymutil.parse_device_str(<span class="hljs-variable language_">self</span>.sim_device)<br>        <span class="hljs-variable language_">self</span>.headless = headless<br><br>        <span class="hljs-comment"># env device is GPU only if sim is on GPU and use_gpu_pipeline=True, otherwise returned tensors are copied to CPU by physX.</span><br>        <span class="hljs-keyword">if</span> sim_device_type==<span class="hljs-string">&#x27;cuda&#x27;</span> <span class="hljs-keyword">and</span> sim_params.use_gpu_pipeline:<br>            <span class="hljs-variable language_">self</span>.device = <span class="hljs-variable language_">self</span>.sim_device<br>        <span class="hljs-keyword">else</span>:<br>            <span class="hljs-variable language_">self</span>.device = <span class="hljs-string">&#x27;cpu&#x27;</span><br><br>        <span class="hljs-comment"># graphics device for rendering, -1 for no rendering</span><br>        <span class="hljs-variable language_">self</span>.graphics_device_id = <span class="hljs-variable language_">self</span>.sim_device_id<br>        <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.headless == <span class="hljs-literal">True</span>:<br>            <span class="hljs-variable language_">self</span>.graphics_device_id = -<span class="hljs-number">1</span><br><br>        <span class="hljs-variable language_">self</span>.num_envs = cfg.env.num_envs<br>        <span class="hljs-variable language_">self</span>.num_obs = cfg.env.num_observations<br>        <span class="hljs-variable language_">self</span>.num_privileged_obs = cfg.env.num_privileged_obs<br>        <span class="hljs-variable language_">self</span>.num_actions = cfg.env.num_actions<br><br>        <span class="hljs-comment"># optimization flags for pytorch JIT</span><br>        torch._C._jit_set_profiling_mode(<span class="hljs-literal">False</span>)<br>        torch._C._jit_set_profiling_executor(<span class="hljs-literal">False</span>)<br><br>        <span class="hljs-comment"># allocate buffers</span><br>        <span class="hljs-variable language_">self</span>.obs_buf = torch.zeros(<span class="hljs-variable language_">self</span>.num_envs, <span class="hljs-variable language_">self</span>.num_obs, device=<span class="hljs-variable language_">self</span>.device, dtype=torch.<span class="hljs-built_in">float</span>)<br>        <span class="hljs-variable language_">self</span>.rew_buf = torch.zeros(<span class="hljs-variable language_">self</span>.num_envs, device=<span class="hljs-variable language_">self</span>.device, dtype=torch.<span class="hljs-built_in">float</span>)<br>        <span class="hljs-variable language_">self</span>.reset_buf = torch.ones(<span class="hljs-variable language_">self</span>.num_envs, device=<span class="hljs-variable language_">self</span>.device, dtype=torch.long)<br>        <span class="hljs-variable language_">self</span>.episode_length_buf = torch.zeros(<span class="hljs-variable language_">self</span>.num_envs, device=<span class="hljs-variable language_">self</span>.device, dtype=torch.long)<br>        <span class="hljs-variable language_">self</span>.time_out_buf = torch.zeros(<span class="hljs-variable language_">self</span>.num_envs, device=<span class="hljs-variable language_">self</span>.device, dtype=torch.<span class="hljs-built_in">bool</span>)<br>        <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.num_privileged_obs <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:<br>            <span class="hljs-variable language_">self</span>.privileged_obs_buf = torch.zeros(<span class="hljs-variable language_">self</span>.num_envs, <span class="hljs-variable language_">self</span>.num_privileged_obs, device=<span class="hljs-variable language_">self</span>.device, dtype=torch.<span class="hljs-built_in">float</span>)<br>        <span class="hljs-keyword">else</span>: <br>            <span class="hljs-variable language_">self</span>.privileged_obs_buf = <span class="hljs-literal">None</span><br>            <span class="hljs-comment"># self.num_privileged_obs = self.num_obs</span><br><br>        <span class="hljs-variable language_">self</span>.extras = &#123;&#125;<br><br>        <span class="hljs-comment"># 调用LeggedRobot创建仿真环境，这里不列出来代码，具体包括：</span><br>        <span class="hljs-comment"># 1. 定义z轴索引为2</span><br>        <span class="hljs-comment"># 2. self.gym.create_sim创建仿真环境</span><br>        <span class="hljs-comment"># 3. self.gym.add_ground创建地面</span><br>        <span class="hljs-comment"># 4. 创建训练环境</span><br>        <span class="hljs-comment"># 4.1. 加载机器人资源（设置机器人参数）</span><br>        <span class="hljs-comment"># 4.2. self.gym.load_asset加载机器人资源</span><br>        <span class="hljs-comment"># 4.3. 通过self.gym获取机器人机环境属性</span><br>        <span class="hljs-comment"># 4.4. self.gym.create_env根据预定数量创建isaacgym强化学习</span><br>        <span class="hljs-comment"># 4.5. self.gym.create_actor创建智能体</span><br>        <span class="hljs-comment"># 4.6. 设置智能体关节自由度</span><br>        <span class="hljs-comment"># 4.7. 设置智能体刚体属性</span><br>        <span class="hljs-comment"># 4.8. 保存环境和智能体</span><br>        <span class="hljs-variable language_">self</span>.create_sim()<br>        <span class="hljs-comment"># 准备仿真</span><br>        <span class="hljs-variable language_">self</span>.gym.prepare_sim(<span class="hljs-variable language_">self</span>.sim)<br><br>        <span class="hljs-comment"># todo: read from config</span><br>        <span class="hljs-variable language_">self</span>.enable_viewer_sync = <span class="hljs-literal">True</span><br>        <span class="hljs-variable language_">self</span>.viewer = <span class="hljs-literal">None</span><br><br>        <span class="hljs-comment"># if running with a viewer, set up keyboard shortcuts and camera</span><br>        <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.headless == <span class="hljs-literal">False</span>:<br>            <span class="hljs-comment"># subscribe to keyboard shortcuts</span><br>            <span class="hljs-variable language_">self</span>.viewer = <span class="hljs-variable language_">self</span>.gym.create_viewer(<br>                <span class="hljs-variable language_">self</span>.sim, gymapi.CameraProperties())<br>            <span class="hljs-variable language_">self</span>.gym.subscribe_viewer_keyboard_event(<br>                <span class="hljs-variable language_">self</span>.viewer, gymapi.KEY_ESCAPE, <span class="hljs-string">&quot;QUIT&quot;</span>)<br>            <span class="hljs-variable language_">self</span>.gym.subscribe_viewer_keyboard_event(<br>                <span class="hljs-variable language_">self</span>.viewer, gymapi.KEY_V, <span class="hljs-string">&quot;toggle_viewer_sync&quot;</span>)<br></code></pre></td></tr></table></figure>
+
+<p>在创建完成环境后，代码紧接着创建了OnPolicyRunner，该类是PPO算法封装：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs python">ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args)<br></code></pre></td></tr></table></figure>
+
+<p>OnPolicyRunner在构造时，会创建ActorCritic并基于此，创建PPO算法类，该类定义于rsl_rl中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># 注意这里引入了PPO算法，下面会根据名称创建这个类（有点多此一举）</span><br><span class="hljs-keyword">from</span> rsl_rl.algorithms <span class="hljs-keyword">import</span> PPO<br><span class="hljs-keyword">from</span> rsl_rl.modules <span class="hljs-keyword">import</span> ActorCritic, ActorCriticRecurrent<br><span class="hljs-keyword">from</span> rsl_rl.env <span class="hljs-keyword">import</span> VecEnv<br><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">OnPolicyRunner</span>:<br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self,</span><br><span class="hljs-params">                 env: VecEnv,</span><br><span class="hljs-params">                 train_cfg,</span><br><span class="hljs-params">                 log_dir=<span class="hljs-literal">None</span>,</span><br><span class="hljs-params">                 device=<span class="hljs-string">&#x27;cpu&#x27;</span></span>):<br>        <span class="hljs-comment"># 从配置中拿到训练配置</span><br>        <span class="hljs-variable language_">self</span>.cfg=train_cfg[<span class="hljs-string">&quot;runner&quot;</span>]<br>        <span class="hljs-variable language_">self</span>.alg_cfg = train_cfg[<span class="hljs-string">&quot;algorithm&quot;</span>]<br>        <span class="hljs-variable language_">self</span>.policy_cfg = train_cfg[<span class="hljs-string">&quot;policy&quot;</span>]<br>        <span class="hljs-variable language_">self</span>.device = device<br>        <span class="hljs-variable language_">self</span>.env = env<br>        <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.env.num_privileged_obs <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:<br>            num_critic_obs = <span class="hljs-variable language_">self</span>.env.num_privileged_obs <br>        <span class="hljs-keyword">else</span>:<br>            num_critic_obs = <span class="hljs-variable language_">self</span>.env.num_obs<br><br>        <span class="hljs-comment"># 策略类：ActorCritic创建</span><br>        actor_critic_class = <span class="hljs-built_in">eval</span>(<span class="hljs-variable language_">self</span>.cfg[<span class="hljs-string">&quot;policy_class_name&quot;</span>]) <span class="hljs-comment"># ActorCritic</span><br>        actor_critic: ActorCritic = actor_critic_class( <span class="hljs-variable language_">self</span>.env.num_obs,<br>                                                        num_critic_obs,<br>                                                        <span class="hljs-variable language_">self</span>.env.num_actions,<br>                                                        **<span class="hljs-variable language_">self</span>.policy_cfg).to(<span class="hljs-variable language_">self</span>.device)<br>        <span class="hljs-comment"># 算法类：PPO创建</span><br>        alg_class = <span class="hljs-built_in">eval</span>(<span class="hljs-variable language_">self</span>.cfg[<span class="hljs-string">&quot;algorithm_class_name&quot;</span>]) <span class="hljs-comment"># PPO</span><br>        <span class="hljs-variable language_">self</span>.alg: PPO = alg_class(actor_critic, device=<span class="hljs-variable language_">self</span>.device, **<span class="hljs-variable language_">self</span>.alg_cfg)<br>        <span class="hljs-variable language_">self</span>.num_steps_per_env = <span class="hljs-variable language_">self</span>.cfg[<span class="hljs-string">&quot;num_steps_per_env&quot;</span>]<br>        <span class="hljs-variable language_">self</span>.save_interval = <span class="hljs-variable language_">self</span>.cfg[<span class="hljs-string">&quot;save_interval&quot;</span>]<br><br>        <span class="hljs-comment"># 这一这里，创建的环境数量由这个函数初始化</span><br>        <span class="hljs-variable language_">self</span>.alg.init_storage(<span class="hljs-variable language_">self</span>.env.num_envs, <span class="hljs-variable language_">self</span>.num_steps_per_env, [<span class="hljs-variable language_">self</span>.env.num_obs], [<span class="hljs-variable language_">self</span>.env.num_privileged_obs], [<span class="hljs-variable language_">self</span>.env.num_actions])<br><br>        <span class="hljs-comment"># Log</span><br>        <span class="hljs-variable language_">self</span>.log_dir = log_dir<br>        <span class="hljs-variable language_">self</span>.writer = <span class="hljs-literal">None</span><br>        <span class="hljs-variable language_">self</span>.tot_timesteps = <span class="hljs-number">0</span><br>        <span class="hljs-variable language_">self</span>.tot_time = <span class="hljs-number">0</span><br>        <span class="hljs-variable language_">self</span>.current_learning_iteration = <span class="hljs-number">0</span><br>        <span class="hljs-comment"># 环境复位</span><br>        _, _ = <span class="hljs-variable language_">self</span>.env.reset()<br></code></pre></td></tr></table></figure>
+
+<p>初始化PPO算法所需要的配置定义在g1_config.py中，Actor和Critic都使用LSTM神经网络，策略类为ActorCriticRecurrent（调用torch定义LSTM）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">G1RoughCfgPPO</span>( <span class="hljs-title class_ inherited__">LeggedRobotCfgPPO</span> ):<br>    <span class="hljs-keyword">class</span> <span class="hljs-title class_">policy</span>:<br>        init_noise_std = <span class="hljs-number">0.8</span> <span class="hljs-comment"># 噪声</span><br>        actor_hidden_dims = [<span class="hljs-number">32</span>]  <span class="hljs-comment"># 好像并没有用</span><br>        critic_hidden_dims = [<span class="hljs-number">32</span>] <span class="hljs-comment"># 好像并没有用</span><br>        activation = <span class="hljs-string">&#x27;elu&#x27;</span> <span class="hljs-comment"># can be elu, relu, selu, crelu, lrelu, tanh, sigmoid</span><br>        <span class="hljs-comment"># only for &#x27;ActorCriticRecurrent&#x27;:</span><br>        rnn_type = <span class="hljs-string">&#x27;lstm&#x27;</span> <span class="hljs-comment"># 使用LSTM</span><br>        rnn_hidden_size = <span class="hljs-number">64</span> <span class="hljs-comment"># 隐藏层大小64</span><br>        rnn_num_layers = <span class="hljs-number">1</span> <span class="hljs-comment"># 只有一层</span><br>        <br>    <span class="hljs-keyword">class</span> <span class="hljs-title class_">algorithm</span>( LeggedRobotCfgPPO.algorithm ):<br>        entropy_coef = <span class="hljs-number">0.01</span><br><br>    <span class="hljs-keyword">class</span> <span class="hljs-title class_">runner</span>( LeggedRobotCfgPPO.runner ):<br>        policy_class_name = <span class="hljs-string">&quot;ActorCriticRecurrent&quot;</span><br>        max_iterations = <span class="hljs-number">10000</span> <span class="hljs-comment"># 训练最大迭代10000</span><br>        run_name = <span class="hljs-string">&#x27;&#x27;</span><br>        experiment_name = <span class="hljs-string">&#x27;g1&#x27;</span>  <br></code></pre></td></tr></table></figure>
+
+<p>在环境和算法都构造完毕后，程序可以开始训练过程：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs routeros">ppo_runner.learn(<span class="hljs-attribute">num_learning_iterations</span>=train_cfg.runner.max_iterations, <span class="hljs-attribute">init_at_random_ep_len</span>=<span class="hljs-literal">True</span>)<br></code></pre></td></tr></table></figure>
+
+<p>以下是强化学习训练代码，这里我直接在代码中解释（&#x3D;&#x3D;TODO：actions观测不明确&#x3D;&#x3D;）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">learn</span>(<span class="hljs-params">self, num_learning_iterations, init_at_random_ep_len=<span class="hljs-literal">False</span></span>):<br>        <span class="hljs-comment"># 创建logger记录器</span><br>        <span class="hljs-comment"># 在训练过程中输出训练实时loss等</span><br>        <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.log_dir <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span> <span class="hljs-keyword">and</span> <span class="hljs-variable language_">self</span>.writer <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:<br>            <span class="hljs-variable language_">self</span>.writer = SummaryWriter(log_dir=<span class="hljs-variable language_">self</span>.log_dir, flush_secs=<span class="hljs-number">10</span>)<br><br>        <span class="hljs-comment"># 外部传递参数init_at_random_ep_len=True，则回合缓存长度会随机</span><br>        <span class="hljs-keyword">if</span> init_at_random_ep_len:<br>            <span class="hljs-variable language_">self</span>.env.episode_length_buf = torch.randint_like(<span class="hljs-variable language_">self</span>.env.episode_length_buf, high=<span class="hljs-built_in">int</span>(<span class="hljs-variable language_">self</span>.env.max_episode_length))<br>        <span class="hljs-comment"># 注意这里获取观测，观测是在 LeggedRobot.compute_observations()计算返回一个torch.Tensor</span><br>        <span class="hljs-comment"># 1. Base的线速度（缩放）</span><br>        <span class="hljs-comment"># 2. Base的角速度（缩放）</span><br>        <span class="hljs-comment"># 3. 投射到Base的重力</span><br>        <span class="hljs-comment"># 4. 外部速度</span><br>        <span class="hljs-comment"># 5. 关节角度（缩放）</span><br>        <span class="hljs-comment"># 6. 关节角速度（缩放）</span><br>        <span class="hljs-comment"># 7. actions</span><br>        <span class="hljs-comment"># 可以通过配置给观测加噪声</span><br>        obs = <span class="hljs-variable language_">self</span>.env.get_observations()<br>        privileged_obs = <span class="hljs-variable language_">self</span>.env.get_privileged_observations()<br>        critic_obs = privileged_obs <span class="hljs-keyword">if</span> privileged_obs <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span> <span class="hljs-keyword">else</span> obs<br><br>        <span class="hljs-comment"># 把观测向量迁移到指定设备，并切换到训练模式（pytorch需要）</span><br>        obs, critic_obs = obs.to(<span class="hljs-variable language_">self</span>.device), critic_obs.to(<span class="hljs-variable language_">self</span>.device)<br>        <span class="hljs-variable language_">self</span>.alg.actor_critic.train() <span class="hljs-comment"># switch to train mode (for dropout for example)</span><br><br>        ep_infos = []<br>        rewbuffer = deque(maxlen=<span class="hljs-number">100</span>)<br>        lenbuffer = deque(maxlen=<span class="hljs-number">100</span>)<br>        cur_reward_sum = torch.zeros(<span class="hljs-variable language_">self</span>.env.num_envs, dtype=torch.<span class="hljs-built_in">float</span>, device=<span class="hljs-variable language_">self</span>.device)<br>        cur_episode_length = torch.zeros(<span class="hljs-variable language_">self</span>.env.num_envs, dtype=torch.<span class="hljs-built_in">float</span>, device=<span class="hljs-variable language_">self</span>.device)<br><br>        tot_iter = <span class="hljs-variable language_">self</span>.current_learning_iteration + num_learning_iterations<br>        <span class="hljs-keyword">for</span> it <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-variable language_">self</span>.current_learning_iteration, tot_iter):<br>            start = time.time()<br>            <span class="hljs-comment"># 与环境进行交互，获取奖励和下一个状态</span><br>            <span class="hljs-keyword">with</span> torch.inference_mode():<br>                <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-variable language_">self</span>.num_steps_per_env): <span class="hljs-comment"># num_steps_per_env = 24</span><br>                    <span class="hljs-comment"># 从算法中获取一个动作，内部根据策略网络获取动作，根据价值网络获取评估动作价值</span><br>                    actions = <span class="hljs-variable language_">self</span>.alg.act(obs, critic_obs)<br>                    <span class="hljs-comment"># 与环境交互，产生下一步观测、奖励、是否结束</span><br>                    <span class="hljs-comment"># LeggedRobot.step()：</span><br>                    <span class="hljs-comment"># 1. 调用self.render()，利用gym渲染场景</span><br>                    <span class="hljs-comment"># 2. 执行仿真，每个policy dt=4*sim dt</span><br>                    <span class="hljs-comment"># 2.1. 调用self._compute_torques()，如果是位置控制，则使用PD计算关节力矩，并clip</span><br>                    <span class="hljs-comment"># 2.2. 调用self.gym.set_dof_actuation_force_tensor设置到机器人仿真环境</span><br>                    <span class="hljs-comment"># 2.3. 调用self.gym.simulate(self.sim)执行仿真</span><br>                    <span class="hljs-comment"># 2.4. 调用self.gym.refresh_dof_state_tensor刷新状态</span><br>                    <span class="hljs-comment"># 3. 仿真后，执行后处理操作</span><br>                    <span class="hljs-comment"># 3.1. 调用self.gym.refresh_actor_root_state_tensor和self.gym.refresh_net_contact_force_tensor刷新状态</span><br>                    <span class="hljs-comment"># 3.2. 将内部状态，转换为位置、线速度、rpy等可读状态</span><br>                    <span class="hljs-comment"># 3.3. 在计算奖励之前，随机生成vel_x，vel_y,ang_vel_yaw</span><br>                    <span class="hljs-comment"># 3.4. self.check_termination()检查是不是需要停止，例如角度过大快要摔倒等</span><br>                    <span class="hljs-comment"># 3.5. self.compute_reward()计算奖励：应用奖励函数，并追加终止奖励。</span><br>                    <span class="hljs-comment"># 3.5. self._push_robots()如果需要，可以随机推移机器人</span><br>                    <span class="hljs-comment"># 3.6. self.compute_observations()观测更新</span><br>                    obs, privileged_obs, rewards, dones, infos = <span class="hljs-variable language_">self</span>.env.step(actions)<br>                    critic_obs = privileged_obs <span class="hljs-keyword">if</span> privileged_obs <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span> <span class="hljs-keyword">else</span> obs<br>                    <span class="hljs-comment"># self.storage.add_transitions获取奖励，并存储transition </span><br>                    obs, critic_obs, rewards, dones = obs.to(<span class="hljs-variable language_">self</span>.device), critic_obs.to(<span class="hljs-variable language_">self</span>.device), rewards.to(<span class="hljs-variable language_">self</span>.device), dones.to(<span class="hljs-variable language_">self</span>.device)<br>                    <span class="hljs-variable language_">self</span>.alg.process_env_step(rewards, dones, infos)<br>                    <br>                    <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.log_dir <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:<br>                        <span class="hljs-comment"># Book keeping</span><br>                        <span class="hljs-keyword">if</span> <span class="hljs-string">&#x27;episode&#x27;</span> <span class="hljs-keyword">in</span> infos:<br>                            ep_infos.append(infos[<span class="hljs-string">&#x27;episode&#x27;</span>])<br>                        cur_reward_sum += rewards<br>                        cur_episode_length += <span class="hljs-number">1</span><br>                        new_ids = (dones &gt; <span class="hljs-number">0</span>).nonzero(as_tuple=<span class="hljs-literal">False</span>)<br>                        rewbuffer.extend(cur_reward_sum[new_ids][:, <span class="hljs-number">0</span>].cpu().numpy().tolist())<br>                        lenbuffer.extend(cur_episode_length[new_ids][:, <span class="hljs-number">0</span>].cpu().numpy().tolist())<br>                        cur_reward_sum[new_ids] = <span class="hljs-number">0</span><br>                        cur_episode_length[new_ids] = <span class="hljs-number">0</span><br><br>                stop = time.time()<br>                collection_time = stop - start<br><br>                <span class="hljs-comment"># 计算折扣回报</span><br>                start = stop<br>                <span class="hljs-variable language_">self</span>.alg.compute_returns(critic_obs)<br><br>            <span class="hljs-comment"># 执行PPO算法更新</span><br>            mean_value_loss, mean_surrogate_loss = <span class="hljs-variable language_">self</span>.alg.update()<br>            stop = time.time()<br>            learn_time = stop - start<br>            <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.log_dir <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:<br>                <span class="hljs-variable language_">self</span>.log(<span class="hljs-built_in">locals</span>())<br>            <span class="hljs-keyword">if</span> it % <span class="hljs-variable language_">self</span>.save_interval == <span class="hljs-number">0</span>:<br>                <span class="hljs-variable language_">self</span>.save(os.path.join(<span class="hljs-variable language_">self</span>.log_dir, <span class="hljs-string">&#x27;model_&#123;&#125;.pt&#x27;</span>.<span class="hljs-built_in">format</span>(it)))<br>            ep_infos.clear()<br>        <br>        <span class="hljs-variable language_">self</span>.current_learning_iteration += num_learning_iterations<br>        <span class="hljs-variable language_">self</span>.save(os.path.join(<span class="hljs-variable language_">self</span>.log_dir, <span class="hljs-string">&#x27;model_&#123;&#125;.pt&#x27;</span>.<span class="hljs-built_in">format</span>(<span class="hljs-variable language_">self</span>.current_learning_iteration)))<br></code></pre></td></tr></table></figure>
+
+<p>环境提供的奖励，定义于LeggedRobot，代码通过python技巧，获取了该类中所有_reward_xxx的奖励函数，这些奖励函数通过鼓励或者惩罚特定的属性，指导机器人能够按照预期运动：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment">#------------ reward functions----------------</span><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_lin_vel_z</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize z axis base linear velocity</span><br>    <span class="hljs-keyword">return</span> torch.square(<span class="hljs-variable language_">self</span>.base_lin_vel[:, <span class="hljs-number">2</span>])<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_ang_vel_xy</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize xy axes base angular velocity</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>(torch.square(<span class="hljs-variable language_">self</span>.base_ang_vel[:, :<span class="hljs-number">2</span>]), dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_orientation</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize non flat base orientation</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>(torch.square(<span class="hljs-variable language_">self</span>.projected_gravity[:, :<span class="hljs-number">2</span>]), dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_base_height</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize base height away from target</span><br>    base_height = <span class="hljs-variable language_">self</span>.root_states[:, <span class="hljs-number">2</span>]<br>    <span class="hljs-keyword">return</span> torch.square(base_height - <span class="hljs-variable language_">self</span>.cfg.rewards.base_height_target)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_torques</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize torques</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>(torch.square(<span class="hljs-variable language_">self</span>.torques), dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_dof_vel</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize dof velocities</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>(torch.square(<span class="hljs-variable language_">self</span>.dof_vel), dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_dof_acc</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize dof accelerations</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>(torch.square((<span class="hljs-variable language_">self</span>.last_dof_vel - <span class="hljs-variable language_">self</span>.dof_vel) / <span class="hljs-variable language_">self</span>.dt), dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_action_rate</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize changes in actions</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>(torch.square(<span class="hljs-variable language_">self</span>.last_actions - <span class="hljs-variable language_">self</span>.actions), dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_collision</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize collisions on selected bodies</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>(<span class="hljs-number">1.</span>*(torch.norm(<span class="hljs-variable language_">self</span>.contact_forces[:, <span class="hljs-variable language_">self</span>.penalised_contact_indices, :], dim=-<span class="hljs-number">1</span>) &gt; <span class="hljs-number">0.1</span>), dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_termination</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Terminal reward / penalty</span><br>    <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>.reset_buf * ~<span class="hljs-variable language_">self</span>.time_out_buf<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_dof_pos_limits</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize dof positions too close to the limit</span><br>    out_of_limits = -(<span class="hljs-variable language_">self</span>.dof_pos - <span class="hljs-variable language_">self</span>.dof_pos_limits[:, <span class="hljs-number">0</span>]).clip(<span class="hljs-built_in">max</span>=<span class="hljs-number">0.</span>) <span class="hljs-comment"># lower limit</span><br>    out_of_limits += (<span class="hljs-variable language_">self</span>.dof_pos - <span class="hljs-variable language_">self</span>.dof_pos_limits[:, <span class="hljs-number">1</span>]).clip(<span class="hljs-built_in">min</span>=<span class="hljs-number">0.</span>)<br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>(out_of_limits, dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_dof_vel_limits</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize dof velocities too close to the limit</span><br>    <span class="hljs-comment"># clip to max error = 1 rad/s per joint to avoid huge penalties</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>((torch.<span class="hljs-built_in">abs</span>(<span class="hljs-variable language_">self</span>.dof_vel) - <span class="hljs-variable language_">self</span>.dof_vel_limits*<span class="hljs-variable language_">self</span>.cfg.rewards.soft_dof_vel_limit).clip(<span class="hljs-built_in">min</span>=<span class="hljs-number">0.</span>, <span class="hljs-built_in">max</span>=<span class="hljs-number">1.</span>), dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_torque_limits</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># penalize torques too close to the limit</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>((torch.<span class="hljs-built_in">abs</span>(<span class="hljs-variable language_">self</span>.torques) - <span class="hljs-variable language_">self</span>.torque_limits*<span class="hljs-variable language_">self</span>.cfg.rewards.soft_torque_limit).clip(<span class="hljs-built_in">min</span>=<span class="hljs-number">0.</span>), dim=<span class="hljs-number">1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_tracking_lin_vel</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Tracking of linear velocity commands (xy axes)</span><br>    lin_vel_error = torch.<span class="hljs-built_in">sum</span>(torch.square(<span class="hljs-variable language_">self</span>.commands[:, :<span class="hljs-number">2</span>] - <span class="hljs-variable language_">self</span>.base_lin_vel[:, :<span class="hljs-number">2</span>]), dim=<span class="hljs-number">1</span>)<br>    <span class="hljs-keyword">return</span> torch.exp(-lin_vel_error/<span class="hljs-variable language_">self</span>.cfg.rewards.tracking_sigma)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_tracking_ang_vel</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Tracking of angular velocity commands (yaw) </span><br>    ang_vel_error = torch.square(<span class="hljs-variable language_">self</span>.commands[:, <span class="hljs-number">2</span>] - <span class="hljs-variable language_">self</span>.base_ang_vel[:, <span class="hljs-number">2</span>])<br>    <span class="hljs-keyword">return</span> torch.exp(-ang_vel_error/<span class="hljs-variable language_">self</span>.cfg.rewards.tracking_sigma)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_feet_air_time</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Reward long steps</span><br>    <span class="hljs-comment"># Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes</span><br>    contact = <span class="hljs-variable language_">self</span>.contact_forces[:, <span class="hljs-variable language_">self</span>.feet_indices, <span class="hljs-number">2</span>] &gt; <span class="hljs-number">1.</span><br>    contact_filt = torch.logical_or(contact, <span class="hljs-variable language_">self</span>.last_contacts) <br>    <span class="hljs-variable language_">self</span>.last_contacts = contact<br>    first_contact = (<span class="hljs-variable language_">self</span>.feet_air_time &gt; <span class="hljs-number">0.</span>) * contact_filt<br>    <span class="hljs-variable language_">self</span>.feet_air_time += <span class="hljs-variable language_">self</span>.dt<br>    rew_airTime = torch.<span class="hljs-built_in">sum</span>((<span class="hljs-variable language_">self</span>.feet_air_time - <span class="hljs-number">0.5</span>) * first_contact, dim=<span class="hljs-number">1</span>) <span class="hljs-comment"># reward only on first contact with the ground</span><br>    rew_airTime *= torch.norm(<span class="hljs-variable language_">self</span>.commands[:, :<span class="hljs-number">2</span>], dim=<span class="hljs-number">1</span>) &gt; <span class="hljs-number">0.1</span> <span class="hljs-comment">#no reward for zero command</span><br>    <span class="hljs-variable language_">self</span>.feet_air_time *= ~contact_filt<br>    <span class="hljs-keyword">return</span> rew_airTime<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_stumble</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize feet hitting vertical surfaces</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">any</span>(torch.norm(<span class="hljs-variable language_">self</span>.contact_forces[:, <span class="hljs-variable language_">self</span>.feet_indices, :<span class="hljs-number">2</span>], dim=<span class="hljs-number">2</span>) &gt;\<br>         <span class="hljs-number">5</span> *torch.<span class="hljs-built_in">abs</span>(<span class="hljs-variable language_">self</span>.contact_forces[:, <span class="hljs-variable language_">self</span>.feet_indices, <span class="hljs-number">2</span>]), dim=<span class="hljs-number">1</span>)<br>    <br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_stand_still</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># Penalize motion at zero commands</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>(torch.<span class="hljs-built_in">abs</span>(<span class="hljs-variable language_">self</span>.dof_pos - <span class="hljs-variable language_">self</span>.default_dof_pos), dim=<span class="hljs-number">1</span>) * (torch.norm(<span class="hljs-variable language_">self</span>.commands[:, :<span class="hljs-number">2</span>], dim=<span class="hljs-number">1</span>) &lt; <span class="hljs-number">0.1</span>)<br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">_reward_feet_contact_forces</span>(<span class="hljs-params">self</span>):<br>    <span class="hljs-comment"># penalize high contact forces</span><br>    <span class="hljs-keyword">return</span> torch.<span class="hljs-built_in">sum</span>((torch.norm(<span class="hljs-variable language_">self</span>.contact_forces[:, <span class="hljs-variable language_">self</span>.feet_indices, :], dim=-<span class="hljs-number">1</span>) -  <span class="hljs-variable language_">self</span>.cfg.rewards.max_contact_force).clip(<span class="hljs-built_in">min</span>=<span class="hljs-number">0.</span>), dim=<span class="hljs-number">1</span>)<br></code></pre></td></tr></table></figure>
+
+<p>以上大费周章就是为了和环境进行交互，从而获取奖励、计算回报，并更新机器人状态。与环境交互的数据，可以更新到机器人PPO算法，接下来我们直接看下PPO算法更新实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">import</span> torch<br><span class="hljs-keyword">import</span> torch.nn <span class="hljs-keyword">as</span> nn<br><span class="hljs-keyword">import</span> torch.optim <span class="hljs-keyword">as</span> optim<br><br><span class="hljs-keyword">from</span> rsl_rl.modules <span class="hljs-keyword">import</span> ActorCritic<br><span class="hljs-keyword">from</span> rsl_rl.storage <span class="hljs-keyword">import</span> RolloutStorage<br><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">PPO</span>:<br>    actor_critic: ActorCritic<br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self,</span><br><span class="hljs-params">                 actor_critic,</span><br><span class="hljs-params">                 num_learning_epochs=<span class="hljs-number">1</span>,</span><br><span class="hljs-params">                 num_mini_batches=<span class="hljs-number">1</span>,</span><br><span class="hljs-params">                 clip_param=<span class="hljs-number">0.2</span>,</span><br><span class="hljs-params">                 gamma=<span class="hljs-number">0.998</span>,</span><br><span class="hljs-params">                 lam=<span class="hljs-number">0.95</span>,</span><br><span class="hljs-params">                 value_loss_coef=<span class="hljs-number">1.0</span>,</span><br><span class="hljs-params">                 entropy_coef=<span class="hljs-number">0.0</span>,</span><br><span class="hljs-params">                 learning_rate=<span class="hljs-number">1e-3</span>,</span><br><span class="hljs-params">                 max_grad_norm=<span class="hljs-number">1.0</span>,</span><br><span class="hljs-params">                 use_clipped_value_loss=<span class="hljs-literal">True</span>,</span><br><span class="hljs-params">                 schedule=<span class="hljs-string">&quot;fixed&quot;</span>,</span><br><span class="hljs-params">                 desired_kl=<span class="hljs-number">0.01</span>,</span><br><span class="hljs-params">                 device=<span class="hljs-string">&#x27;cpu&#x27;</span>,</span><br><span class="hljs-params">                 </span>):<br><br>        <span class="hljs-variable language_">self</span>.device = device<br><br>        <span class="hljs-variable language_">self</span>.desired_kl = desired_kl<br>        <span class="hljs-variable language_">self</span>.schedule = schedule<br>        <span class="hljs-variable language_">self</span>.learning_rate = learning_rate<br><br>        <span class="hljs-comment"># PPO components</span><br>        <span class="hljs-variable language_">self</span>.actor_critic = actor_critic<br>        <span class="hljs-variable language_">self</span>.actor_critic.to(<span class="hljs-variable language_">self</span>.device)<br>        <span class="hljs-variable language_">self</span>.storage = <span class="hljs-literal">None</span> <span class="hljs-comment"># initialized later</span><br>        <span class="hljs-variable language_">self</span>.optimizer = optim.Adam(<span class="hljs-variable language_">self</span>.actor_critic.parameters(), lr=learning_rate)<br>        <span class="hljs-variable language_">self</span>.transition = RolloutStorage.Transition()<br><br>        <span class="hljs-comment"># PPO parameters</span><br>        <span class="hljs-variable language_">self</span>.clip_param = clip_param<br>        <span class="hljs-variable language_">self</span>.num_learning_epochs = num_learning_epochs<br>        <span class="hljs-variable language_">self</span>.num_mini_batches = num_mini_batches<br>        <span class="hljs-variable language_">self</span>.value_loss_coef = value_loss_coef<br>        <span class="hljs-variable language_">self</span>.entropy_coef = entropy_coef<br>        <span class="hljs-variable language_">self</span>.gamma = gamma<br>        <span class="hljs-variable language_">self</span>.lam = lam<br>        <span class="hljs-variable language_">self</span>.max_grad_norm = max_grad_norm<br>        <span class="hljs-variable language_">self</span>.use_clipped_value_loss = use_clipped_value_loss<br><br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">update</span>(<span class="hljs-params">self</span>):<br>        mean_value_loss = <span class="hljs-number">0</span><br>        mean_surrogate_loss = <span class="hljs-number">0</span><br><br>        <span class="hljs-comment"># 根据是否RNN，选择不同的mini-batch生成器</span><br>        <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.actor_critic.is_recurrent:<br>            generator = <span class="hljs-variable language_">self</span>.storage.reccurent_mini_batch_generator(<span class="hljs-variable language_">self</span>.num_mini_batches, <span class="hljs-variable language_">self</span>.num_learning_epochs)<br>        <span class="hljs-keyword">else</span>:<br>            generator = <span class="hljs-variable language_">self</span>.storage.mini_batch_generator(<span class="hljs-variable language_">self</span>.num_mini_batches, <span class="hljs-variable language_">self</span>.num_learning_epochs)<br><br>        <span class="hljs-comment"># 对每一个mini-batch</span><br>        <span class="hljs-keyword">for</span> obs_batch, critic_obs_batch, actions_batch, target_values_batch, advantages_batch, returns_batch, old_actions_log_prob_batch, \<br>            old_mu_batch, old_sigma_batch, hid_states_batch, masks_batch <span class="hljs-keyword">in</span> generator:<br><br>                <span class="hljs-comment"># 从策略网络采样获取动作Action，并评估State-Value</span><br>                <span class="hljs-variable language_">self</span>.actor_critic.act(obs_batch, masks=masks_batch, hidden_states=hid_states_batch[<span class="hljs-number">0</span>])<br>                actions_log_prob_batch = <span class="hljs-variable language_">self</span>.actor_critic.get_actions_log_prob(actions_batch)<br>                value_batch = <span class="hljs-variable language_">self</span>.actor_critic.evaluate(critic_obs_batch, masks=masks_batch, hidden_states=hid_states_batch[<span class="hljs-number">1</span>])<br>                mu_batch = <span class="hljs-variable language_">self</span>.actor_critic.action_mean<br>                sigma_batch = <span class="hljs-variable language_">self</span>.actor_critic.action_std<br>                entropy_batch = <span class="hljs-variable language_">self</span>.actor_critic.entropy<br><br>                <span class="hljs-comment"># 自适应KL</span><br>                <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.desired_kl != <span class="hljs-literal">None</span> <span class="hljs-keyword">and</span> <span class="hljs-variable language_">self</span>.schedule == <span class="hljs-string">&#x27;adaptive&#x27;</span>:<br>                    <span class="hljs-keyword">with</span> torch.inference_mode():<br>                        kl = torch.<span class="hljs-built_in">sum</span>(<br>                            torch.log(sigma_batch / old_sigma_batch + <span class="hljs-number">1.e-5</span>) + (torch.square(old_sigma_batch) + torch.square(old_mu_batch - mu_batch)) <br>                            / (<span class="hljs-number">2.0</span> * torch.square(sigma_batch)) - <span class="hljs-number">0.5</span>, axis=-<span class="hljs-number">1</span>)<br>                        kl_mean = torch.mean(kl)<br>                        <span class="hljs-comment"># 根据KL调整学习率</span><br>                        <span class="hljs-keyword">if</span> kl_mean &gt; <span class="hljs-variable language_">self</span>.desired_kl * <span class="hljs-number">2.0</span>:<br>                            <span class="hljs-variable language_">self</span>.learning_rate = <span class="hljs-built_in">max</span>(<span class="hljs-number">1e-5</span>, <span class="hljs-variable language_">self</span>.learning_rate / <span class="hljs-number">1.5</span>)<br>                        <span class="hljs-keyword">elif</span> kl_mean &lt; <span class="hljs-variable language_">self</span>.desired_kl / <span class="hljs-number">2.0</span> <span class="hljs-keyword">and</span> kl_mean &gt; <span class="hljs-number">0.0</span>:<br>                            <span class="hljs-variable language_">self</span>.learning_rate = <span class="hljs-built_in">min</span>(<span class="hljs-number">1e-2</span>, <span class="hljs-variable language_">self</span>.learning_rate * <span class="hljs-number">1.5</span>)<br>                        <br>                        <span class="hljs-keyword">for</span> param_group <span class="hljs-keyword">in</span> <span class="hljs-variable language_">self</span>.optimizer.param_groups:<br>                            param_group[<span class="hljs-string">&#x27;lr&#x27;</span>] = <span class="hljs-variable language_">self</span>.learning_rate<br><br><br>                <span class="hljs-comment"># Surrogate loss</span><br>                <span class="hljs-comment"># 重要性采样比例</span><br>                ratio = torch.exp(actions_log_prob_batch - torch.squeeze(old_actions_log_prob_batch))<br>                <span class="hljs-comment"># 计算截断和非截断下重要性采样*优势函数</span><br>                surrogate = -torch.squeeze(advantages_batch) * ratio<br>                surrogate_clipped = -torch.squeeze(advantages_batch) * torch.clamp(ratio, <span class="hljs-number">1.0</span> - <span class="hljs-variable language_">self</span>.clip_param,<br>                                                                                <span class="hljs-number">1.0</span> + <span class="hljs-variable language_">self</span>.clip_param)<br>                <span class="hljs-comment"># 由于添加了符号，所以这里找到的是最大</span><br>                surrogate_loss = torch.<span class="hljs-built_in">max</span>(surrogate, surrogate_clipped).mean()<br><br>                <span class="hljs-comment"># Value function loss</span><br>                <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>.use_clipped_value_loss:<br>                    value_clipped = target_values_batch + (value_batch - target_values_batch).clamp(-<span class="hljs-variable language_">self</span>.clip_param,<br>                                                                                                    <span class="hljs-variable language_">self</span>.clip_param)<br>                    value_losses = (value_batch - returns_batch).<span class="hljs-built_in">pow</span>(<span class="hljs-number">2</span>)<br>                    value_losses_clipped = (value_clipped - returns_batch).<span class="hljs-built_in">pow</span>(<span class="hljs-number">2</span>)<br>                    value_loss = torch.<span class="hljs-built_in">max</span>(value_losses, value_losses_clipped).mean()<br>                <span class="hljs-keyword">else</span>:<br>                    value_loss = (returns_batch - value_batch).<span class="hljs-built_in">pow</span>(<span class="hljs-number">2</span>).mean()<br>                <span class="hljs-comment"># 计算策略梯度的loss</span><br>                loss = surrogate_loss + <span class="hljs-variable language_">self</span>.value_loss_coef * value_loss - <span class="hljs-variable language_">self</span>.entropy_coef * entropy_batch.mean()<br><br>                <span class="hljs-comment"># 梯度更新反向传播，注意torch是梯度下降，所以前面去了负号</span><br>                <span class="hljs-variable language_">self</span>.optimizer.zero_grad()<br>                loss.backward()<br>                nn.utils.clip_grad_norm_(<span class="hljs-variable language_">self</span>.actor_critic.parameters(), <span class="hljs-variable language_">self</span>.max_grad_norm)<br>                <span class="hljs-variable language_">self</span>.optimizer.step()<br><br>                mean_value_loss += value_loss.item()<br>                mean_surrogate_loss += surrogate_loss.item()<br><br>        num_updates = <span class="hljs-variable language_">self</span>.num_learning_epochs * <span class="hljs-variable language_">self</span>.num_mini_batches<br>        mean_value_loss /= num_updates<br>        mean_surrogate_loss /= num_updates<br>        <span class="hljs-variable language_">self</span>.storage.clear()<br><br>        <span class="hljs-keyword">return</span> mean_value_loss, mean_surrogate_loss<br></code></pre></td></tr></table></figure>
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/ReinforceLearning/" class="category-chain-item">ReinforceLearning</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Unitree-RL/" class="print-no-link">#Unitree-RL</a>
+      
+        <a href="/tags/Locomotion/" class="print-no-link">#Locomotion</a>
+      
+        <a href="/tags/PPO/" class="print-no-link">#PPO</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>宇树RL代码分析</div>
+      <div>https://ziqingdream.github.io/2025/03/10/-1-机器人技术栈/-2-强化学习/【0】宇树RL代码分析/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>工程课代表[B站] / ZiQingDream[Github]</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年3月10日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/04/12/-1-%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%8A%80%E6%9C%AF%E6%A0%88/-1-ROS2%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/-1-ROS2-Humble%E4%BB%A3%E7%A0%81%E9%98%85%E8%AF%BB/%E3%80%90%E9%99%84%E3%80%91ROS2%20%E6%BA%90%E7%A0%81%E7%8E%AF%E5%A2%83%E8%AF%B4%E6%98%8E/" title="ROS2 源码环境说明">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">ROS2 源码环境说明</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2020/06/20/-9-hexo%E6%A0%B7%E4%BE%8B%E6%96%87%E4%BB%B6/hexo-echarts/" title="使用 ECharts 插件绘制炫酷图表">
+                        <span class="hidden-mobile">使用 ECharts 插件绘制炫酷图表</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="valine"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#valine', function() {
+      Fluid.utils.createScript('https://lib.baomitu.com/valine/1.5.1/Valine.min.js', function() {
+        var options = Object.assign(
+          {"appId":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","appKey":"fUOlkXhD9wcmxOTed9NdlqPH","path":"window.location.pathname","placeholder":"留言仅限讨论，禁止广告等行为","avatar":"robohash","meta":["nick","mail","link"],"requiredFields":[],"pageSize":10,"lang":"zh-CN","highlight":true,"recordIP":true,"serverURLs":"https://lyt8mpsi.lc-cn-n1-shared.com","emojiCDN":null,"emojiMaps":null,"enableQQ":false,"appid":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","appkey":"fUOlkXhD9wcmxOTed9NdlqPH"},
+          {
+            el: "#valine",
+            path: window.location.pathname
+          }
+        )
+        new Valine(options);
+        Fluid.utils.waitElementVisible('#valine .vcontent', () => {
+          var imgSelector = '#valine .vcontent img:not(.vemoji)';
+          Fluid.plugins.imageCaption(imgSelector);
+          Fluid.plugins.fancyBox(imgSelector);
+        })
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+    <div class="statistics">
+  
+  
+
+  
+    
+      <span id="leancloud-site-pv-container" style="display: none">
+        总访问量 
+        <span id="leancloud-site-pv"></span>
+         次
+      </span>
+    
+    
+      <span id="leancloud-site-uv-container" style="display: none">
+        总访客数 
+        <span id="leancloud-site-uv"></span>
+         人
+      </span>
+    
+    
+
+  
+
+</div>
+
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script defer src="/js/leancloud.js" ></script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
