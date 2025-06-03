@@ -28,7 +28,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://ziqingdream.github.io/img/ros2-executor/title.png">
 <meta property="article:published_time" content="2025-04-12T16:00:00.000Z">
-<meta property="article:modified_time" content="2025-06-02T06:04:53.655Z">
+<meta property="article:modified_time" content="2025-06-03T14:24:28.494Z">
 <meta property="article:author" content="工程课代表">
 <meta property="article:tag" content="Executor">
 <meta property="article:tag" content="ROS2-Executor">
@@ -77,7 +77,7 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"ziqingdream.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","app_key":"fUOlkXhD9wcmxOTed9NdlqPH","server_url":"https://lyt8mpsi.lc-cn-n1-shared.com","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+    var CONFIG = {"hostname":"ziqingdream.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":4},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","app_key":"fUOlkXhD9wcmxOTed9NdlqPH","server_url":"https://lyt8mpsi.lc-cn-n1-shared.com","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
@@ -252,7 +252,7 @@
         
         
         
-          59 分钟
+          60 分钟
         
       </span>
     
@@ -334,7 +334,7 @@
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// src/ros2/rclcpp/rclcpp/src/rclcpp/executor.cpp</span><br><span class="hljs-comment">// Executor是SingleThreadedExecutor父类</span><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">Executor::add_node</span><span class="hljs-params">(std::shared_ptr&lt;rclcpp::Node&gt; node_ptr, <span class="hljs-type">bool</span> notify)</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-keyword">this</span>-&gt;<span class="hljs-built_in">add_node</span>(node_ptr-&gt;<span class="hljs-built_in">get_node_base_interface</span>(), notify);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>那为什么rclcpp::spin()不会出现问题？原因是rclcpp::spin()会执行调度循环，一般不会退出来，共享指针也就被保留下来（我认为这是ros2代码缺陷，造成开发者有点精神分裂）。</p>
-<h2 id="执行器spin"><a href="#执行器spin" class="headerlink" title="执行器spin()"></a>执行器spin()</h2><p>让我们的关注点再回到单线程执行器上来，进入SingleThreadedExecutor::spin()看一看到底发生了什么：</p>
+<h2 id="单线程执行器spin"><a href="#单线程执行器spin" class="headerlink" title="单线程执行器spin()"></a>单线程执行器spin()</h2><p>让我们的关注点再回到单线程执行器上来，进入SingleThreadedExecutor::spin()看一看到底发生了什么：</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">SingleThreadedExecutor::spin</span><span class="hljs-params">()</span></span><br><span class="hljs-function"></span>&#123;<br>  <span class="hljs-comment">// std::atomic_bool spinning;</span><br>  <span class="hljs-comment">// 原子变量，表示是否当前已经有人spin()，这部分防止多次spin()：</span><br>  <span class="hljs-comment">// 1. 如果没调用过spin(): spinning = true，并返回false</span><br>  <span class="hljs-comment">// 2. 如果已经spin()：spinning=true，并返回true，此时会抛出异常，程序退出</span><br>  <span class="hljs-keyword">if</span> (spinning.<span class="hljs-built_in">exchange</span>(<span class="hljs-literal">true</span>)) &#123;<br>    <span class="hljs-keyword">throw</span> std::<span class="hljs-built_in">runtime_error</span>(<span class="hljs-string">&quot;spin() called while already spinning&quot;</span>);<br>  &#125;<br><br>  <span class="hljs-comment">// 这个不细说，这行代码在异常/函数退出时，将spinning=false，</span><br>  <span class="hljs-comment">// 主要让多线程内部正常退出，防止资源泄露</span><br>  <span class="hljs-built_in">RCPPUTILS_SCOPE_EXIT</span>(<span class="hljs-keyword">this</span>-&gt;spinning.<span class="hljs-built_in">store</span>(<span class="hljs-literal">false</span>); );<br>  <br>  <span class="hljs-keyword">while</span> (rclcpp::<span class="hljs-built_in">ok</span>(<span class="hljs-keyword">this</span>-&gt;context_) &amp;&amp; spinning.<span class="hljs-built_in">load</span>()) &#123;<br>  <span class="hljs-comment">/*struct AnyExecutable</span><br><span class="hljs-comment">    &#123;</span><br><span class="hljs-comment">      RCLCPP_PUBLIC</span><br><span class="hljs-comment">      AnyExecutable();</span><br><span class="hljs-comment">    </span><br><span class="hljs-comment">      RCLCPP_PUBLIC</span><br><span class="hljs-comment">      virtual ~AnyExecutable();</span><br><span class="hljs-comment">    </span><br><span class="hljs-comment">      // Only one of the following pointers will be set.</span><br><span class="hljs-comment">      rclcpp::SubscriptionBase::SharedPtr subscription; // 话题订阅</span><br><span class="hljs-comment">      rclcpp::TimerBase::SharedPtr timer; // 定时器</span><br><span class="hljs-comment">      rclcpp::ServiceBase::SharedPtr service; // 服务端</span><br><span class="hljs-comment">      rclcpp::ClientBase::SharedPtr client; // 客户端</span><br><span class="hljs-comment">      rclcpp::Waitable::SharedPtr waitable;</span><br><span class="hljs-comment">      // These are used to keep the scope on the containing items</span><br><span class="hljs-comment">      rclcpp::CallbackGroup::SharedPtr callback_group;</span><br><span class="hljs-comment">      rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base;</span><br><span class="hljs-comment">      std::shared_ptr&lt;void&gt; data;</span><br><span class="hljs-comment">    &#125;; */</span><br>    rclcpp::AnyExecutable any_executable;<br><br>    <span class="hljs-comment">// 获取一个可调用的对象：话题订阅、定时器、服务回调、客户端回调、waitable</span><br>    <span class="hljs-keyword">if</span> (<span class="hljs-built_in">get_next_executable</span>(any_executable)) &#123;<br>      <span class="hljs-comment">// 如果获取成功，执行回调函数</span><br>      <span class="hljs-built_in">execute_any_executable</span>(any_executable);<br>    &#125;<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>整个过程就一个线程（也就是调用spin()的线程），循环尝试获取可调用对象，如果成功，就执行回调函数。这样加入到单线程执行器中节点的内部回调串行执行，流程图如下：</p>
@@ -533,15 +533,21 @@
             
               
               
-                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">
                   <span class="hint--top hint--rounded" aria-label="BY - 署名">
                     <i class="iconfont icon-cc-by"></i>
                   </span>
                 </a>
               
-                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">
-                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
-                    <i class="iconfont icon-cc-sa"></i>
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="ND - 禁止演绎">
+                    <i class="iconfont icon-cc-nd"></i>
                   </span>
                 </a>
               
@@ -582,37 +588,6 @@
             </div>
 
             
-  
-  
-    <article id="comments" lazyload>
-      
-  <div id="valine"></div>
-  <script type="text/javascript">
-    Fluid.utils.loadComments('#valine', function() {
-      Fluid.utils.createScript('https://lib.baomitu.com/valine/1.5.1/Valine.min.js', function() {
-        var options = Object.assign(
-          {"appId":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","appKey":"fUOlkXhD9wcmxOTed9NdlqPH","path":"window.location.pathname","placeholder":"留言仅限讨论，禁止广告等行为","avatar":"robohash","meta":["nick","mail","link"],"requiredFields":[],"pageSize":10,"lang":"zh-CN","highlight":true,"recordIP":true,"serverURLs":"https://lyt8mpsi.lc-cn-n1-shared.com","emojiCDN":null,"emojiMaps":null,"enableQQ":false,"appid":"LyT8mpSI2Jq9CRhOtNOgBXkE-9Nh9j0Va","appkey":"fUOlkXhD9wcmxOTed9NdlqPH"},
-          {
-            el: "#valine",
-            path: window.location.pathname
-          }
-        )
-        new Valine(options);
-        Fluid.utils.waitElementVisible('#valine .vcontent', () => {
-          var imgSelector = '#valine .vcontent img:not(.vemoji)';
-          Fluid.plugins.imageCaption(imgSelector);
-          Fluid.plugins.fancyBox(imgSelector);
-        })
-      });
-    });
-  </script>
-  <noscript>Please enable JavaScript to view the comments</noscript>
-
-
-    </article>
-  
-
-
           </article>
         </div>
       </div>
@@ -708,32 +683,6 @@
        <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
     </div>
   
-  
-    <div class="statistics">
-  
-  
-
-  
-    
-      <span id="leancloud-site-pv-container" style="display: none">
-        总访问量 
-        <span id="leancloud-site-pv"></span>
-         次
-      </span>
-    
-    
-      <span id="leancloud-site-uv-container" style="display: none">
-        总访客数 
-        <span id="leancloud-site-uv"></span>
-         人
-      </span>
-    
-    
-
-  
-
-</div>
-
   
   
 </div>
