@@ -19,27 +19,26 @@
   <meta name="author" content="工程课代表[B站] / ZiQingDream[Github]">
   <meta name="keywords" content="">
   
-    <meta name="description" content="Docker版本Humble源码实验环境">
+    <meta name="description" content="通过分析Humble版本Navigation2框架，提供全局代码概览">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ROS2 源码环境说明">
-<meta property="og:url" content="https://ziqingdream.github.io/2025/04/12/-1-%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%8A%80%E6%9C%AF%E6%A0%88/-1-ROS2%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/-1-ROS2-Humble%E4%BB%A3%E7%A0%81%E9%98%85%E8%AF%BB/%E3%80%90%E9%99%84%E3%80%91ROS2%20%E6%BA%90%E7%A0%81%E7%8E%AF%E5%A2%83%E8%AF%B4%E6%98%8E/index.html">
+<meta property="og:title" content="Navigation2 代码阅读（The Bigger Picture Of Navigation2）">
+<meta property="og:url" content="https://ziqingdream.github.io/2025/06/11/-1-%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%8A%80%E6%9C%AF%E6%A0%88/-3-%E5%AF%BC%E8%88%AA%E8%A7%84%E5%88%92/%E3%80%901%E3%80%91Navigation2%20%E4%BB%A3%E7%A0%81%E6%A6%82%E8%A7%88/index.html">
 <meta property="og:site_name" content="工程课代表 Blog">
-<meta property="og:description" content="Docker版本Humble源码实验环境">
+<meta property="og:description" content="通过分析Humble版本Navigation2框架，提供全局代码概览">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://ziqingdream.github.io/img/introduce/C++.png">
-<meta property="article:published_time" content="2025-04-11T16:00:00.000Z">
-<meta property="article:modified_time" content="2025-06-03T14:24:28.501Z">
+<meta property="og:image" content="https://ziqingdream.github.io/img/nav2-framework/nav2_architecture.png">
+<meta property="article:published_time" content="2025-06-10T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-06-10T16:09:17.700Z">
 <meta property="article:author" content="工程课代表">
-<meta property="article:tag" content="ROS2">
-<meta property="article:tag" content="Humble">
-<meta property="article:tag" content="Executor">
-<meta property="article:tag" content="ROS2-Executor">
+<meta property="article:tag" content="Navigation2">
+<meta property="article:tag" content="ROS2-Navigation">
+<meta property="article:tag" content="Nav2">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://ziqingdream.github.io/img/introduce/C++.png">
+<meta name="twitter:image" content="https://ziqingdream.github.io/img/nav2-framework/nav2_architecture.png">
   
   
   
-  <title>ROS2 源码环境说明 - 工程课代表 Blog</title>
+  <title>Navigation2 代码阅读（The Bigger Picture Of Navigation2） - 工程课代表 Blog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -218,7 +217,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="ROS2 源码环境说明"></span>
+            <span id="subtitle" data-typed-text="Navigation2 代码阅读（The Bigger Picture Of Navigation2）"></span>
           
         </div>
 
@@ -229,8 +228,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2025-04-12 00:00" pubdate>
-          2025年4月12日 凌晨
+        <time datetime="2025-06-11 00:00" pubdate>
+          2025年6月11日 凌晨
         </time>
       </span>
     
@@ -241,7 +240,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          300 字
+          103 字
         
       </span>
     
@@ -252,7 +251,7 @@
         
         
         
-          3 分钟
+          1 分钟
         
       </span>
     
@@ -289,7 +288,7 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">ROS2 源码环境说明</h1>
+            <h1 id="seo-header">Navigation2 代码阅读（The Bigger Picture Of Navigation2）</h1>
             
             
               <div class="markdown-body">
@@ -297,14 +296,12 @@
                 <div class="note note-success">
             <p>本文由 ZiQingDream 编写，未经允许禁止转载。</p><p>本文作者：工程课代表[B站] &#x2F; ZiQingDream[Github]</p>
           </div>
-<h1 id="Docker环境说明"><a href="#Docker环境说明" class="headerlink" title="Docker环境说明"></a>Docker环境说明</h1><h2 id="Docker构建"><a href="#Docker构建" class="headerlink" title="Docker构建"></a>Docker构建</h2><p>为了简化大家的构建过程，解决令人烦恼的国外的仓库依赖问题。我在这里使用Docker打包的humble编译构建环境，参见官网：<a target="_blank" rel="noopener" href="https://docs.ros.org/en/humble/Installation/Alternatives/Ubuntu-Development-Setup.html">https://docs.ros.org/en/humble/Installation/Alternatives/Ubuntu-Development-Setup.html</a><br>生成docker为：ros&#x2F;ros2-lab-humble，当前更新到3.0版本，运行指令为：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs Bash">docker run -it --name humble ros/ros2-lab-humble:3.0 bash<br></code></pre></td></tr></table></figure>
 
-<p>然后通过vscode的“Remote Development”插件，即可很方便阅读代码。<br>另外，Docker镜像中，为了解决编译某个测试单元链接错误，强制关闭了humble的测试：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs Bash">colcon build --symlink-install --cmake-args=-DBUILD_TESTING=OFF<br></code></pre></td></tr></table></figure>
+<div class="note note-warning">
+            <p>阅读本文需要你有一定ROS2、机器人导航基本知识，特别要求对于轮式底盘运动学有一定了解。</p>
+          </div>
 
-<p>如果你想修改代码，可以通过docker内的build.sh完成代码编译更新。</p>
-<h1 id="为什么使用Humble"><a href="#为什么使用Humble" class="headerlink" title="为什么使用Humble"></a>为什么使用Humble</h1><p>为什么选择Humble：随着时代的发展ROS1官方不再更新维护，逐步退出历史舞台，而ROS2主流版本以Foxy和Humble为主，其中Foxy也不再支持维护。当前工程中稳定版本就是Humble，所以代码阅读以Humble为主。2025年，最新ROS2为Fazzy，在多个方面优化了ROS2，有机会再聊。</p>
+<h1 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h1><p>这篇文章没有正文，只有一个概览图，是我读Humble Nav2代码时的笔记，建议电脑观看（放大、放大…）<br><img src="/img/nav2-framework/the-bigger-picture.png" srcset="/img/loading.gif" lazyload></p>
 
                 
               </div>
@@ -323,7 +320,7 @@
     
       <span class="category-chain">
         
-  <a href="/categories/ROS2/" class="category-chain-item">ROS2</a>
+  <a href="/categories/Navigation/" class="category-chain-item">Navigation</a>
   
   
 
@@ -338,13 +335,11 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/ROS2/" class="print-no-link">#ROS2</a>
+        <a href="/tags/Navigation2/" class="print-no-link">#Navigation2</a>
       
-        <a href="/tags/Humble/" class="print-no-link">#Humble</a>
+        <a href="/tags/ROS2-Navigation/" class="print-no-link">#ROS2-Navigation</a>
       
-        <a href="/tags/Executor/" class="print-no-link">#Executor</a>
-      
-        <a href="/tags/ROS2-Executor/" class="print-no-link">#ROS2-Executor</a>
+        <a href="/tags/Nav2/" class="print-no-link">#Nav2</a>
       
     </div>
   
@@ -356,8 +351,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>ROS2 源码环境说明</div>
-      <div>https://ziqingdream.github.io/2025/04/12/-1-机器人技术栈/-1-ROS2操作系统/-1-ROS2-Humble代码阅读/【附】ROS2 源码环境说明/</div>
+      <div>Navigation2 代码阅读（The Bigger Picture Of Navigation2）</div>
+      <div>https://ziqingdream.github.io/2025/06/11/-1-机器人技术栈/-3-导航规划/【1】Navigation2 代码概览/</div>
     </div>
     <div class="license-meta">
       
@@ -369,7 +364,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2025年4月12日</div>
+          <div>2025年6月11日</div>
         </div>
       
       
@@ -413,18 +408,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2025/04/13/-1-%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%8A%80%E6%9C%AF%E6%A0%88/-1-ROS2%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/-1-ROS2-Humble%E4%BB%A3%E7%A0%81%E9%98%85%E8%AF%BB/%E3%80%901%E3%80%91ROS2%20Executor%E8%AF%A6%E8%A7%A3/" title="ROS2 Executor详解">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">ROS2 Executor详解</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2025/03/10/-1-%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%8A%80%E6%9C%AF%E6%A0%88/-2-%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0/%E3%80%900%E3%80%91%E5%AE%87%E6%A0%91RL%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90/" title="宇树RL代码分析">
-                        <span class="hidden-mobile">宇树RL代码分析</span>
+                      <a href="/2025/04/15/-1-%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%8A%80%E6%9C%AF%E6%A0%88/-1-ROS2%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/-1-ROS2-Humble%E4%BB%A3%E7%A0%81%E9%98%85%E8%AF%BB/%E3%80%903%E3%80%91ROS2%20Action%E8%AF%A6%E8%A7%A3/" title="ROS2 Action详解">
+                        <span class="hidden-mobile">ROS2 Action详解</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
